@@ -177,7 +177,7 @@ public class BasicHolonomicDrivetrain {
     // Behavior: Gets the target position of the back left motor.
     // Exceptions: Throws an IllegalStateException if the current drive state is not POSITION_DRIVE
     // Returns: The front left motor target position as an integer in counts.
-    public int getfrontLeftTarget() throws IllegalStateException {
+    public int getFrontLeftTarget() throws IllegalStateException {
         if (currentDriveState != DriveState.POSITION_DRIVE) {
             throw new IllegalStateException(
                     "Must be in POSITION_DRIVE state to access motor target positions!");
@@ -188,7 +188,7 @@ public class BasicHolonomicDrivetrain {
     // Behavior: Gets the target position of the back left motor.
     // Exceptions: Throws an IllegalStateException if the current drive state is not POSITION_DRIVE
     // Returns: The front right motor target position as an integer in counts.
-    public int getfrontRightTarget() throws IllegalStateException {
+    public int getFrontRightTarget() throws IllegalStateException {
         if (currentDriveState != DriveState.POSITION_DRIVE) {
             throw new IllegalStateException(
                     "Must be in POSITION_DRIVE state to access motor target positions!");
