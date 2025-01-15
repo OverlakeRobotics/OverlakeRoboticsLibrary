@@ -1,3 +1,5 @@
+// Interface for all odometry modules that get the robots position in some way.
+
 package org.firstinspires.ftc.teamcode.system;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 

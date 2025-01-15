@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 public class BasicHolonomicDrivetrain {
+    public static double forwardToStrafeRatio = 1.19148;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;
     private final DcMotorEx frontLeft;
@@ -19,7 +20,7 @@ public class BasicHolonomicDrivetrain {
     private double strafe;
     private double turn;
     private DriveState currentDriveState;
-    private enum DriveState {
+    protected enum DriveState {
         POSITION_DRIVE,
         POWER_DRIVE,
         STOPPED
@@ -125,7 +126,7 @@ public class BasicHolonomicDrivetrain {
         this.forward = forward;
         this.strafe = strafe;
         this.turn = turn;
-        currentDriveState = DriveState.POWER_DRIVE;
+        setDriveState(DriveState.POWER_DRIVE);
     }
 
     // Behavior: Sets the position for all the motors and the power to drive to those positions.
@@ -134,6 +135,7 @@ public class BasicHolonomicDrivetrain {
     //      - int backRightTarget: The target for the back right motor in counts.
     //      - int frontLeftTarget: The target for the front left motor in counts.
     //      - int frontRightTarget: The target for the front right motor in counts.
+    //      - double power: The power to move the robot at.
     public void setPositionDrive(int backLeftTarget, int backRightTarget,
                                  int frontLeftTarget, int frontRightTarget, double power) {
         this.backLeftTarget = backLeftTarget;
@@ -143,7 +145,38 @@ public class BasicHolonomicDrivetrain {
         forward = power;
         strafe = 0;
         turn = 0;
-        currentDriveState = DriveState.POSITION_DRIVE;
+        setDriveState(DriveState.POSITION_DRIVE);
+    }
+
+    // Behavior: An overloaded method of setPositionDrive that sets the position of the motors
+    //           based on given forward, strafe, and turn count values.
+    // Parameters:
+    //      - double forward: The number of forward counts to move. It is a double so it is not
+    //                        truncated before all the calculations are complete.
+    //      - double strafe: The number of strafe counts to move. It is a double so it is not
+    //                        truncated before all the calculations are complete.
+    //      - double turn: The number of turn counts to move. It is a double so it is not
+    //                        truncated before all the calculations are complete.
+    //      - double power: The power to move the robot at.
+    public void setPositionDrive(double forward, double strafe, double turn, double power) {
+        backLeftTarget = (int)(forward - strafe + turn);
+        backRightTarget = (int)(forward + strafe - turn);
+        frontLeftTarget = (int)(forward + strafe + turn);
+        frontRightTarget = (int)(forward - strafe - turn);
+        this.forward = power;
+        this.strafe = 0;
+        this.turn = 0;
+        setDriveState(DriveState.POSITION_DRIVE);
+    }
+
+    // Behavior: An overloaded method of setPositionDrive that sets the motor targets based on
+    //           a direction (relative to the robot), and a distance (in counts).
+    // Parameters:
+    //      - int distance: The distance to drive, in counts.
+    //      - double direction: The direction relative to the robot to drive in, in degrees.
+    //      - double power: The power to move the robot at.
+    public void setPositionDrive(int distance, double direction, double power) {
+
     }
 
     // Behavior: Stops the robot by setting the motor powers to 0.
@@ -151,7 +184,20 @@ public class BasicHolonomicDrivetrain {
         forward = 0;
         strafe = 0;
         turn = 0;
-        currentDriveState = DriveState.STOPPED;
+        setDriveState(DriveState.STOPPED);
+    }
+
+    // Behavior: Sets the drive state of the robot.
+    // Parameters:
+    //      - DriveState driveState: The drive state to set the robot to.
+    protected void setDriveState(DriveState driveState) {
+        currentDriveState = driveState;
+    }
+
+    // Behavior: Gets the current drive state of the robot.
+    // Returns: A DriveState object containing the current drive state.
+    protected DriveState getDriveState(){
+        return currentDriveState;
     }
 
     // Behavior: Gets the target position of the back left motor.
@@ -196,5 +242,13 @@ public class BasicHolonomicDrivetrain {
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
         return frontRightTarget;
+    }
+
+    // Behavior: Sets the forward to strafe ratio, I.E. how many counts of strafing is equivalent
+    //           to one count of going forward.
+    // Parameters:
+    //      - double ratio: The ratio to set the forward to strafe ratio to.
+    public static void setForwardToStrafeRatio(double ratio) {
+        forwardToStrafeRatio = ratio;
     }
 }

@@ -1,43 +1,42 @@
-// Implementation of the OdometryModule interface for SparkFunOTOS sensor.
+// Implementation of the OdometryModule interface for the IMU.
 
 package org.firstinspires.ftc.teamcode.components;
-import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 
+import com.qualcomm.robotcore.hardware.IMU;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.teamcode.system.OdometryModule;
 
-public class SparkFunOdometry implements OdometryModule {
-    private final SparkFunOTOS sparkFunSensor;
-    private SparkFunOTOS.Pose2D position;
+public class IMUOdometry implements OdometryModule {
+    private final IMU imu;
+    private double heading;
     private int positionPriority;
     private int headingPriority;
     private boolean doPositionReset;
     private boolean doHeadingReset;
 
-    public SparkFunOdometry(SparkFunOTOS sparkFunSensor) {
-        sparkFunSensor.setLinearUnit(DistanceUnit.INCH);
-        sparkFunSensor.setAngularUnit(AngleUnit.DEGREES);
-        this.sparkFunSensor = sparkFunSensor;
+    public IMUOdometry(IMU imu) {
+        this.imu = imu;
 
-        positionPriority = 1;
-        headingPriority = 3;
-        doPositionReset = true;
+        positionPriority = Integer.MIN_VALUE;
+        headingPriority = 2;
+        doPositionReset = false;
         doHeadingReset = false;
     }
 
     public void updatePosition() {
-        position = sparkFunSensor.getPosition();
+        YawPitchRollAngles orientation = imu.getRobotYawPitchRollAngles();
+        heading = orientation.getYaw(AngleUnit.DEGREES);
     }
 
     public Pose2D getPosition() {
-        return new Pose2D(DistanceUnit.INCH, position.x, position.y, AngleUnit.DEGREES, position.h);
+        return new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, heading);
     }
 
     public void setPosition(Pose2D position) {
-        sparkFunSensor.setPosition(new SparkFunOTOS.Pose2D(position.getX(DistanceUnit.INCH),
-                position.getY(DistanceUnit.INCH), position.getHeading(AngleUnit.DEGREES)));
+        heading = position.getHeading(AngleUnit.DEGREES);
     }
 
     public void setPositionPriority(int priority) {
@@ -73,7 +72,7 @@ public class SparkFunOdometry implements OdometryModule {
     }
 
     public boolean isPositionAccurate() {
-        return true;
+        return false;
     }
 
     public boolean isHeadingAccurate() {
@@ -81,6 +80,6 @@ public class SparkFunOdometry implements OdometryModule {
     }
 
     public void reset() {
-        sparkFunSensor.resetTracking();
+        imu.resetYaw();
     }
 }

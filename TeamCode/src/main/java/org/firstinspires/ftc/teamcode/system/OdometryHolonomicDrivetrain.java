@@ -4,10 +4,10 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
-    private final OdometryCollection odometry;
+    private final OdometryModule odometry;
 
     public OdometryHolonomicDrivetrain(DcMotorEx backLeft, DcMotorEx backRight, DcMotorEx frontLeft,
-                                       DcMotorEx frontRight, OdometryCollection odometry) {
+                                       DcMotorEx frontRight, OdometryModule odometry) {
         super(backLeft, backRight, frontLeft, frontRight);
         this.odometry = odometry;
     }
