@@ -64,7 +64,7 @@ public class BasicHolonomicDrivetrain {
     private void setMotorMode(DcMotorEx.RunMode mode) {
         backLeft.setMode(mode);
         backRight.setMode(mode);
-        frontLeft.setMode(mode):
+        frontLeft.setMode(mode);
         frontRight.setMode(mode);
     }
 
