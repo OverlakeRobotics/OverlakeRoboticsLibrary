@@ -1,4 +1,6 @@
-//
+// This class contains basic movement for robots with holonomic movement (Mecanum or Omni)
+// It includes functions that set power to the motors, set target positions to the motors, and
+// stop the robot.
 
 package org.firstinspires.ftc.teamcode.system;
 import com.qualcomm.robotcore.hardware.DcMotor;
