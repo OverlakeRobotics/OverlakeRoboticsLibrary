@@ -1,5 +1,5 @@
 // This class contains basic movement for robots with holonomic movement (Mecanum or Omni)
-// It includes functions that set power to the motors, set target positions to the motors, and
+// It includes functions that set velocity to the motors, set target positions to the motors, and
 // stop the robot.
 
 package org.firstinspires.ftc.teamcode.system;
@@ -7,22 +7,24 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 public class BasicHolonomicDrivetrain {
-    public static double forwardToStrafeRatio = 1.19148;
+    public static final double MAX_STOP_VELOCITY = 1e-2;
+    public static final int MAX_VELOCITY = 3000;
+    public static final double FORWARD_TO_STRAFE_RATIO = 1.19148;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;
     private final DcMotorEx frontLeft;
     private final DcMotorEx frontRight;
-    private int backLeftTarget;
-    private int backRightTarget;
-    private int frontLeftTarget;
-    private int frontRightTarget;
-    private double forward;
-    private double strafe;
-    private double turn;
-    private DriveState currentDriveState;
-    protected enum DriveState {
+    protected int backLeftTarget;
+    protected int backRightTarget;
+    protected int frontLeftTarget;
+    protected int frontRightTarget;
+    protected double forward;
+    protected double strafe;
+    protected double turn;
+    protected DriveState currentDriveState;
+    public enum DriveState {
         POSITION_DRIVE,
-        POWER_DRIVE,
+        VELOCITY_DRIVE,
         STOPPED
 
     };
@@ -47,38 +49,39 @@ public class BasicHolonomicDrivetrain {
         currentDriveState = DriveState.STOPPED;
     }
 
-    // Behavior: Sets the power of the drive motors to the given powers.
+    // Behavior: Sets the velocity of the drive motors to the given velocities.
     // Parameters:
-    //      - double backLeftPower: The power for the back left motor.
-    //      - double backRightPower: The power for the back right motor.
-    //      - double frontLeftPower: The power for the front left motor.
-    //      - double frontRightPower: The power for the front right motor.
-    private void setPower(double backLeftPower, double backRightPower,
-                          double frontLeftPower, double frontRightPower) {
-        backLeft.setPower(backLeftPower);
-        backRight.setPower(backRightPower);
-        frontLeft.setPower(frontLeftPower);
-        frontRight.setPower(frontRightPower);
+    //      - double backLeftVelocity: The velocity for the back left motor.
+    //      - double backRightVelocity: The velocity for the back right motor.
+    //      - double frontLeftVelocity: The velocity for the front left motor.
+    //      - double frontRightVelocity: The velocity for the front right motor.
+    protected void setVelocity(double backLeftVelocity, double backRightVelocity,
+                               double frontLeftVelocity, double frontRightVelocity) {
+        backLeft.setVelocity(backLeftVelocity);
+        backRight.setVelocity(backRightVelocity);
+        frontLeft.setVelocity(frontLeftVelocity);
+        frontRight.setVelocity(frontRightVelocity);
     }
 
     // Behavior: Sets the mode of all the motors to the given mode.
     // Parameters:
     //      - DcMotorEx.RunMode mode: The mode to set the motors to.
-    private void setMotorMode(DcMotorEx.RunMode mode) {
+    protected void setMotorMode(DcMotorEx.RunMode mode) {
         backLeft.setMode(mode);
         backRight.setMode(mode);
         frontLeft.setMode(mode);
         frontRight.setMode(mode);
     }
 
-    // Behavior: Sets the drive power given a forward power, a strafe power, and a turn power. If
-    //           power exceeds 1.0 (the limit) for any motor, it will scale all the powers down
-    //           until the highest power is 1.0 to make sure the robot can still maneuver.
+    // Behavior: Sets the drive velocity given a forward velocity, a strafe velocity, and a turn
+    //           velocity. If velocity exceeds 1.0 (the limit) for any motor, it will scale all the
+    //           velocities down until the highest velocity is 1.0 to make sure the robot can still
+    //           maneuver.
     // Parameters:
-    //      - double forward: The forward power.
-    //      - double strafe: The strafe power.
-    //      - double turn: The turn power.
-    private void moveRobot(double forward, double strafe, double turn) {
+    //      - double forward: The forward velocity.
+    //      - double strafe: The strafe velocity.
+    //      - double turn: The turn velocity.
+    protected void moveRobot(double forward, double strafe, double turn) {
         double bl = forward - strafe + turn;
         double br = forward + strafe - turn;
         double fl = forward + strafe + turn;
@@ -86,63 +89,70 @@ public class BasicHolonomicDrivetrain {
 
         double max = Math.max(Math.max(Math.abs(fl), Math.abs(fr)),
                               Math.max(Math.abs(bl), Math.abs(br)));
-        if (max > 1.0) {
+        if (max > MAX_VELOCITY) {
             fl /= max;
             fr /= max;
             bl /= max;
             br /= max;
         }
 
-        setPower(bl, br, fl, fr);
+        setVelocity(bl, br, fl, fr);
     }
 
-    // Behavior: Drives the robot based on the current state and powers. This should be called
-    //           every loop. The possible states are STOPPED, which sets the power to 0,
-    //           POWER_DRIVE, which drives based on the current strafe, forward, and turn powers, and
-    //           POSITION_DRIVE, which drives the motors to the current set position.
+    // Behavior: Drives the robot based on the current state and velocities. This should be called
+    //           every loop. The possible states are STOPPED, which sets the velocity to 0,
+    //           VELOCITY_DRIVE, which drives based on the current strafe, forward, and turn velocities,
+    //           and POSITION_DRIVE, which drives the motors to the current set position.
     public void drive() {
         switch (currentDriveState) {
             case STOPPED:
-                setPower(0, 0, 0, 0);
+                setVelocity(0, 0, 0, 0);
+                break;
 
-            case POWER_DRIVE:
+            case VELOCITY_DRIVE:
+                if (Math.abs(forward) <= MAX_STOP_VELOCITY && Math.abs(strafe) <= MAX_STOP_VELOCITY &&
+                                                           Math.abs(turn) <= MAX_STOP_VELOCITY) {
+                    currentDriveState = DriveState.STOPPED;
+                }
                 moveRobot(forward, strafe, turn);
+                break;
 
             case POSITION_DRIVE:
                 backLeft.setTargetPosition(backLeftTarget);
                 backRight.setTargetPosition(backRightTarget);
                 frontLeft.setTargetPosition(frontLeftTarget);
                 frontRight.setTargetPosition(frontRightTarget);
-                setPower(forward, forward, forward, forward);
+                setVelocity(forward, forward, forward, forward);
+                break;
         }
     }
 
-    // Behavior: Sets the forward, strafe, and turn powers of the robot to the given values.
+    // Behavior: Sets the forward, strafe, and turn velocities of the robot to the given values.
     // Parameters:
-    //      - double forward: The given forward power.
-    //      - double strafe: The given strafe power.
-    //      - double turn: The given turn power.
-    public void setPowerDrive(double forward, double strafe, double turn) {
+    //      - double forward: The given forward velocity.
+    //      - double strafe: The given strafe velocity.
+    //      - double turn: The given turn velocity.
+    public void setVelocityDrive(double forward, double strafe, double turn) {
         this.forward = forward;
         this.strafe = strafe;
         this.turn = turn;
-        setDriveState(DriveState.POWER_DRIVE);
+        setDriveState(DriveState.VELOCITY_DRIVE);
     }
 
-    // Behavior: Sets the position for all the motors and the power to drive to those positions.
+    // Behavior: Sets the position for all the motors and the velocity to drive to those positions.
     // Parameters:
     //      - int backLeftTarget: The target for the back left motor in counts.
     //      - int backRightTarget: The target for the back right motor in counts.
     //      - int frontLeftTarget: The target for the front left motor in counts.
     //      - int frontRightTarget: The target for the front right motor in counts.
-    //      - double power: The power to move the robot at.
+    //      - double velocity: The velocity to move the robot at.
     public void setPositionDrive(int backLeftTarget, int backRightTarget,
-                                 int frontLeftTarget, int frontRightTarget, double power) {
+                                 int frontLeftTarget, int frontRightTarget, double velocity) {
         this.backLeftTarget = backLeftTarget;
         this.backRightTarget = backRightTarget;
         this.frontLeftTarget = frontLeftTarget;
         this.frontRightTarget = frontRightTarget;
-        forward = power;
+        forward = velocity;
         strafe = 0;
         turn = 0;
         setDriveState(DriveState.POSITION_DRIVE);
@@ -157,13 +167,13 @@ public class BasicHolonomicDrivetrain {
     //                        truncated before all the calculations are complete.
     //      - double turn: The number of turn counts to move. It is a double so it is not
     //                        truncated before all the calculations are complete.
-    //      - double power: The power to move the robot at.
-    public void setPositionDrive(double forward, double strafe, double turn, double power) {
+    //      - double velocity: The velocity to move the robot at.
+    public void setPositionDrive(double forward, double strafe, double turn, double velocity) {
         backLeftTarget = (int)(forward - strafe + turn);
         backRightTarget = (int)(forward + strafe - turn);
         frontLeftTarget = (int)(forward + strafe + turn);
         frontRightTarget = (int)(forward - strafe - turn);
-        this.forward = power;
+        this.forward = velocity;
         this.strafe = 0;
         this.turn = 0;
         setDriveState(DriveState.POSITION_DRIVE);
@@ -174,12 +184,15 @@ public class BasicHolonomicDrivetrain {
     // Parameters:
     //      - int distance: The distance to drive, in counts.
     //      - double direction: The direction relative to the robot to drive in, in degrees.
-    //      - double power: The power to move the robot at.
-    public void setPositionDrive(int distance, double direction, double power) {
-
+    //                          Forward is 0 degrees, left is positive, right is negative.
+    //      - double velocity: The velocity to move the robot at.
+    public void setPositionDrive(int distance, double direction, double velocity) {
+        double forwardCounts = distance * Math.cos(direction);
+        double strafeCounts = distance * Math.sin(direction) * FORWARD_TO_STRAFE_RATIO;
+        setPositionDrive(forwardCounts, strafeCounts, 0, velocity);
     }
 
-    // Behavior: Stops the robot by setting the motor powers to 0.
+    // Behavior: Stops the robot by setting the motor velocities to 0.
     public void stop() {
         forward = 0;
         strafe = 0;
@@ -191,6 +204,15 @@ public class BasicHolonomicDrivetrain {
     // Parameters:
     //      - DriveState driveState: The drive state to set the robot to.
     protected void setDriveState(DriveState driveState) {
+        switch (currentDriveState) {
+            case POSITION_DRIVE:
+                setMotorMode(DcMotor.RunMode.RUN_TO_POSITION);
+                break;
+
+            case VELOCITY_DRIVE:
+                setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                break;
+        }
         currentDriveState = driveState;
     }
 
@@ -242,13 +264,5 @@ public class BasicHolonomicDrivetrain {
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
         return frontRightTarget;
-    }
-
-    // Behavior: Sets the forward to strafe ratio, I.E. how many counts of strafing is equivalent
-    //           to one count of going forward.
-    // Parameters:
-    //      - double ratio: The ratio to set the forward to strafe ratio to.
-    public static void setForwardToStrafeRatio(double ratio) {
-        forwardToStrafeRatio = ratio;
     }
 }
