@@ -3,21 +3,20 @@
 // stop the robot.
 
 package org.firstinspires.ftc.teamcode.system;
+import android.util.Log;
+
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 public class BasicHolonomicDrivetrain {
     public static final double MAX_STOP_VELOCITY = 1e-2;
     public static final int MAX_VELOCITY = 3000;
-    public static final double FORWARD_TO_STRAFE_RATIO = 1.19148;
+    public static final double FORWARD_TO_STRAFE_RATIO = 1; // 1.19148;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;
     private final DcMotorEx frontLeft;
     private final DcMotorEx frontRight;
-    protected int backLeftTarget;
-    protected int backRightTarget;
-    protected int frontLeftTarget;
-    protected int frontRightTarget;
     protected double forward;
     protected double strafe;
     protected double turn;
@@ -90,10 +89,10 @@ public class BasicHolonomicDrivetrain {
         double max = Math.max(Math.max(Math.abs(fl), Math.abs(fr)),
                               Math.max(Math.abs(bl), Math.abs(br)));
         if (max > MAX_VELOCITY) {
-            fl /= max;
-            fr /= max;
-            bl /= max;
-            br /= max;
+            fl *= MAX_VELOCITY / max;
+            fr *= MAX_VELOCITY / max;
+            bl *= MAX_VELOCITY / max;
+            br *= MAX_VELOCITY / max;
         }
 
         setVelocity(bl, br, fl, fr);
@@ -112,16 +111,12 @@ public class BasicHolonomicDrivetrain {
             case VELOCITY_DRIVE:
                 if (Math.abs(forward) <= MAX_STOP_VELOCITY && Math.abs(strafe) <= MAX_STOP_VELOCITY &&
                                                            Math.abs(turn) <= MAX_STOP_VELOCITY) {
-                    currentDriveState = DriveState.STOPPED;
+                    setDriveState(DriveState.STOPPED);
                 }
                 moveRobot(forward, strafe, turn);
                 break;
 
             case POSITION_DRIVE:
-                backLeft.setTargetPosition(backLeftTarget);
-                backRight.setTargetPosition(backRightTarget);
-                frontLeft.setTargetPosition(frontLeftTarget);
-                frontRight.setTargetPosition(frontRightTarget);
                 setVelocity(forward, forward, forward, forward);
                 break;
         }
@@ -133,6 +128,11 @@ public class BasicHolonomicDrivetrain {
     //      - double strafe: The given strafe velocity.
     //      - double turn: The given turn velocity.
     public void setVelocityDrive(double forward, double strafe, double turn) {
+        if (Math.abs(forward) <= MAX_STOP_VELOCITY && Math.abs(strafe) <= MAX_STOP_VELOCITY &&
+                Math.abs(turn) <= MAX_STOP_VELOCITY) {
+            setDriveState(DriveState.STOPPED);
+            return;
+        }
         this.forward = forward;
         this.strafe = strafe;
         this.turn = turn;
@@ -148,10 +148,10 @@ public class BasicHolonomicDrivetrain {
     //      - double velocity: The velocity to move the robot at.
     public void setPositionDrive(int backLeftTarget, int backRightTarget,
                                  int frontLeftTarget, int frontRightTarget, double velocity) {
-        this.backLeftTarget = backLeftTarget;
-        this.backRightTarget = backRightTarget;
-        this.frontLeftTarget = frontLeftTarget;
-        this.frontRightTarget = frontRightTarget;
+        backLeft.setTargetPosition(backLeftTarget);
+        backRight.setTargetPosition(backRightTarget);
+        frontLeft.setTargetPosition(frontLeftTarget);
+        frontRight.setTargetPosition(frontRightTarget);
         forward = velocity;
         strafe = 0;
         turn = 0;
@@ -169,10 +169,10 @@ public class BasicHolonomicDrivetrain {
     //                        truncated before all the calculations are complete.
     //      - double velocity: The velocity to move the robot at.
     public void setPositionDrive(double forward, double strafe, double turn, double velocity) {
-        backLeftTarget = (int)(forward - strafe + turn);
-        backRightTarget = (int)(forward + strafe - turn);
-        frontLeftTarget = (int)(forward + strafe + turn);
-        frontRightTarget = (int)(forward - strafe - turn);
+        backLeft.setTargetPosition(backLeft.getCurrentPosition() + (int)(forward - strafe + turn));
+        backRight.setTargetPosition(backRight.getTargetPosition() + (int)(forward + strafe - turn));
+        frontLeft.setTargetPosition(frontLeft.getCurrentPosition() + (int)(forward + strafe + turn));
+        frontRight.setTargetPosition(frontRight.getCurrentPosition() + (int)(forward - strafe - turn));
         this.forward = velocity;
         this.strafe = 0;
         this.turn = 0;
@@ -187,8 +187,10 @@ public class BasicHolonomicDrivetrain {
     //                          Forward is 0 degrees, left is positive, right is negative.
     //      - double velocity: The velocity to move the robot at.
     public void setPositionDrive(int distance, double direction, double velocity) {
-        double forwardCounts = distance * Math.cos(direction);
-        double strafeCounts = distance * Math.sin(direction) * FORWARD_TO_STRAFE_RATIO;
+        double forwardCounts = distance * Math.cos(Math.toRadians(direction));
+        double strafeCounts = distance * Math.sin(Math.toRadians(direction)) * FORWARD_TO_STRAFE_RATIO;
+        Log.d("Counts", "ForwardCounts: " + forwardCounts);
+        Log.d("Counts", "StrafeCounts: " + strafeCounts);
         setPositionDrive(forwardCounts, strafeCounts, 0, velocity);
     }
 
@@ -204,7 +206,7 @@ public class BasicHolonomicDrivetrain {
     // Parameters:
     //      - DriveState driveState: The drive state to set the robot to.
     protected void setDriveState(DriveState driveState) {
-        switch (currentDriveState) {
+        switch (driveState) {
             case POSITION_DRIVE:
                 setMotorMode(DcMotor.RunMode.RUN_TO_POSITION);
                 break;
@@ -230,7 +232,7 @@ public class BasicHolonomicDrivetrain {
             throw new IllegalStateException(
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
-        return backLeftTarget;
+        return backLeft.getTargetPosition();
     }
 
     // Behavior: Gets the target position of the back left motor.
@@ -241,7 +243,7 @@ public class BasicHolonomicDrivetrain {
             throw new IllegalStateException(
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
-        return backRightTarget;
+        return backRight.getTargetPosition();
     }
 
     // Behavior: Gets the target position of the back left motor.
@@ -252,7 +254,7 @@ public class BasicHolonomicDrivetrain {
             throw new IllegalStateException(
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
-        return frontLeftTarget;
+        return frontLeft.getTargetPosition();
     }
 
     // Behavior: Gets the target position of the back left motor.
@@ -263,6 +265,6 @@ public class BasicHolonomicDrivetrain {
             throw new IllegalStateException(
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
-        return frontRightTarget;
+        return frontRight.getTargetPosition();
     }
 }
