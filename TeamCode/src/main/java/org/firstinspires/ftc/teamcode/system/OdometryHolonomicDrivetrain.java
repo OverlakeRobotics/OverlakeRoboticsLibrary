@@ -11,8 +11,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
-    private static final double P_GAIN = 0.02;
-    private static final double COUNTS_TO_INCHES = 0.03125;
+    private static final double P_GAIN = 20;
     private static final boolean DO_STOPPED_HEADING_CORRECTION = true;
     private boolean doPositionHeadingCorrection;
     private final OdometryModule odometry;
@@ -23,6 +22,8 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                                        DcMotorEx frontRight, OdometryModule odometry) {
         super(backLeft, backRight, frontLeft, frontRight);
         this.odometry = odometry;
+        this.currentPosition = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
+        this.wantedPosition = currentPosition;
     }
 
     // Behavior: Overrides super classes drive method to include heading correction.
@@ -90,9 +91,6 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         super.setPositionDrive(distance, direction, velocity);
         doPositionHeadingCorrection = false;
     }
-
-    // Behavior: Overloaded method of setPositionDrive that sets the target position of the motors
-    //           according to a given wanted position and a
 
     // Behavior: Sets the wanted heading of the robot.
     // Parameters:
