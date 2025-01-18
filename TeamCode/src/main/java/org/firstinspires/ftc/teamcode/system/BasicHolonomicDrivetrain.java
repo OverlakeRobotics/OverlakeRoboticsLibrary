@@ -56,6 +56,16 @@ public class BasicHolonomicDrivetrain {
     //      - double frontRightVelocity: The velocity for the front right motor.
     protected void setVelocity(double backLeftVelocity, double backRightVelocity,
                                double frontLeftVelocity, double frontRightVelocity) {
+        double max = Math.max(Math.max(Math.abs(frontLeftVelocity), Math.abs(frontRightVelocity)),
+                Math.max(Math.abs(backLeftVelocity), Math.abs(backRightVelocity)));
+
+        if (max > MAX_VELOCITY) {
+            frontLeftVelocity *= MAX_VELOCITY / max;
+            frontRightVelocity *= MAX_VELOCITY / max;
+            backLeftVelocity *= MAX_VELOCITY / max;
+            backRightVelocity *= MAX_VELOCITY / max;
+        }
+
         backLeft.setVelocity(backLeftVelocity);
         backRight.setVelocity(backRightVelocity);
         frontLeft.setVelocity(frontLeftVelocity);
@@ -73,27 +83,18 @@ public class BasicHolonomicDrivetrain {
     }
 
     // Behavior: Sets the drive velocity given a forward velocity, a strafe velocity, and a turn
-    //           velocity. If velocity exceeds 1.0 (the limit) for any motor, it will scale all the
-    //           velocities down until the highest velocity is 1.0 to make sure the robot can still
-    //           maneuver.
+    //           velocity. If velocity exceeds MAX_VELOCITY, it will scale all the velocities
+    //           down until the highest velocity is MAX_VELOCITY to make sure the robot can still
+    //           maneuver. The directions follow the unit circle.
     // Parameters:
-    //      - double forward: The forward velocity.
-    //      - double strafe: The strafe velocity.
-    //      - double turn: The turn velocity.
+    //      - double forward: The forward velocity. Positive for forwards and negative for backwards.
+    //      - double strafe: The strafe velocity. Positive for left and negative for right.
+    //      - double turn: The turn velocity. Positive for left and negative for right.
     protected void moveRobot(double forward, double strafe, double turn) {
-        double bl = forward - strafe + turn;
-        double br = forward + strafe - turn;
-        double fl = forward + strafe + turn;
-        double fr = forward - strafe - turn;
-
-        double max = Math.max(Math.max(Math.abs(fl), Math.abs(fr)),
-                              Math.max(Math.abs(bl), Math.abs(br)));
-        if (max > MAX_VELOCITY) {
-            fl *= MAX_VELOCITY / max;
-            fr *= MAX_VELOCITY / max;
-            bl *= MAX_VELOCITY / max;
-            br *= MAX_VELOCITY / max;
-        }
+        double bl = forward + strafe - turn;
+        double br = forward - strafe + turn;
+        double fl = forward - strafe - turn;
+        double fr = forward + strafe + turn;
 
         setVelocity(bl, br, fl, fr);
     }
@@ -117,6 +118,9 @@ public class BasicHolonomicDrivetrain {
                 break;
 
             case POSITION_DRIVE:
+                if (!isDriving()) {
+                    setDriveState(DriveState.STOPPED);
+                }
                 setVelocity(forward, forward, forward, forward);
                 break;
         }
@@ -159,7 +163,8 @@ public class BasicHolonomicDrivetrain {
     }
 
     // Behavior: An overloaded method of setPositionDrive that sets the position of the motors
-    //           based on given forward, strafe, and turn count values.
+    //           based on given forward, strafe, and turn count values. Directions follow the
+    //           unit circle.
     // Parameters:
     //      - double forward: The number of forward counts to move. It is a double so it is not
     //                        truncated before all the calculations are complete.
@@ -169,10 +174,10 @@ public class BasicHolonomicDrivetrain {
     //                        truncated before all the calculations are complete.
     //      - double velocity: The velocity to move the robot at.
     public void setPositionDrive(double forward, double strafe, double turn, double velocity) {
-        backLeft.setTargetPosition(backLeft.getCurrentPosition() + (int)(forward - strafe + turn));
-        backRight.setTargetPosition(backRight.getTargetPosition() + (int)(forward + strafe - turn));
-        frontLeft.setTargetPosition(frontLeft.getCurrentPosition() + (int)(forward + strafe + turn));
-        frontRight.setTargetPosition(frontRight.getCurrentPosition() + (int)(forward - strafe - turn));
+        backLeft.setTargetPosition(backLeft.getCurrentPosition() + (int)(forward + strafe - turn));
+        backRight.setTargetPosition(backRight.getCurrentPosition() + (int)(forward - strafe + turn));
+        frontLeft.setTargetPosition(frontLeft.getCurrentPosition() + (int)(forward - strafe - turn));
+        frontRight.setTargetPosition(frontRight.getCurrentPosition() + (int)(forward + strafe + turn));
         this.forward = velocity;
         this.strafe = 0;
         this.turn = 0;
@@ -214,8 +219,18 @@ public class BasicHolonomicDrivetrain {
             case VELOCITY_DRIVE:
                 setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 break;
+
+            case STOPPED:
+                setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                break;
         }
         currentDriveState = driveState;
+    }
+
+    // Behavior: Returns whether the robot is currently driving
+    // Returns: A boolean that is true if the robot is currently driving, false otherwise.
+    public boolean isDriving() {
+        return frontLeft.isBusy() || frontRight.isBusy() || backLeft.isBusy() || backRight.isBusy();
     }
 
     // Behavior: Gets the current drive state of the robot.
@@ -266,5 +281,21 @@ public class BasicHolonomicDrivetrain {
                     "Must be in POSITION_DRIVE state to access motor target positions!");
         }
         return frontRight.getTargetPosition();
+    }
+
+    public int getBackLeftPosition() {
+        return backLeft.getCurrentPosition();
+    }
+
+    public int getBackRightPosition() {
+        return backRight.getCurrentPosition();
+    }
+
+    public int getFrontLeftPosition() {
+        return frontLeft.getCurrentPosition();
+    }
+
+    public int getFrontRightPosition() {
+        return frontRight.getCurrentPosition();
     }
 }
