@@ -11,7 +11,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
 public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
-    private static final double P_GAIN = 20;
+    private static final double P_GAIN = 50;
     private static final boolean DO_STOPPED_HEADING_CORRECTION = true;
     private boolean doPositionHeadingCorrection;
     private final OdometryModule odometry;
@@ -29,19 +29,43 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     // Behavior: Overrides super classes drive method to include heading correction.
     @Override
     public void drive() {
-        super.drive();
         switch (currentDriveState) {
             case STOPPED:
                 if (DO_STOPPED_HEADING_CORRECTION) {
                     moveRobot(0, 0, getHeadingCorrection());
+                    break;
                 }
-                break;
 
             case POSITION_DRIVE:
-                if (doPositionHeadingCorrection) {
-                    moveRobot(forward, 0, getHeadingCorrection());
+                if (!isDriving()) {
+                    setDriveState(DriveState.STOPPED);
+                    break;
                 }
-                break;
+                if (doPositionHeadingCorrection) {
+                    double backLeftDif = (getBackLeftTarget() - getBackLeftPosition());
+                    double backRightDif = (getBackRightTarget() - getBackRightPosition());
+                    double frontLeftDif = (getFrontLeftTarget() - getFrontLeftPosition());
+                    double frontRightDif = (getFrontRightTarget() - getFrontRightPosition());
+
+                    double max = Math.max(Math.max(Math.abs(backLeftDif), Math.abs(backRightDif)),
+                            Math.max(Math.abs(frontLeftDif), Math.abs(frontRightDif)));
+                    backLeftDif /= max;
+                    backRightDif /= max;
+                    frontLeftDif /= max;
+                    frontRightDif /= max;
+
+                    double correction = getHeadingCorrection();
+
+                    setVelocity(forward * backLeftDif - correction, forward * backRightDif + correction,
+                            forward * frontLeftDif - correction, forward * frontRightDif + correction);
+                    break;
+                }
+
+            case VELOCITY_DRIVE:
+                wantedPosition = currentPosition;
+
+            default:
+                super.drive();
         }
     }
 
@@ -62,7 +86,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
 
     // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
     public void setPositionDrive(int distance, double direction, double velocity, double wantedH) {
-        super.setPositionDrive(distance, direction, velocity);
+        super.setPositionDrive(distance, direction - currentPosition.getHeading(AngleUnit.DEGREES), velocity);
         setWantedHeading(wantedH);
         doPositionHeadingCorrection = true;
     }
@@ -98,15 +122,6 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     public void setWantedHeading(double wantedHeading) {
         wantedPosition = new Pose2D(DistanceUnit.INCH, wantedPosition.getX(DistanceUnit.INCH),
                 wantedPosition.getY(DistanceUnit.INCH), AngleUnit.DEGREES, wantedHeading);
-    }
-
-    // Behavior: Overrides setDriveState to set the wanted position to the current position when stopped.
-    @Override
-    protected void setDriveState(DriveState driveState) {
-        super.setDriveState(driveState);
-        if (driveState == DriveState.STOPPED) {
-            wantedPosition = currentPosition;
-        }
     }
 
     // Behavior: Gets the turn velocity needed to heading correct the robot.

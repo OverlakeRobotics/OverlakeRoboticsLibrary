@@ -6,9 +6,11 @@ import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.components.IMUOdometry;
 import org.firstinspires.ftc.teamcode.components.SparkFunOTOSOdometry;
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
@@ -20,16 +22,17 @@ public class OdometryOpMode extends OpMode {
 
     @Override
     public void init() {
-        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
-        configureOtos(photoSensor);
+//        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
+//        configureOtos(photoSensor);
+        IMU gyro = hardwareMap.get(IMU.class, "imu");
+        gyro.resetYaw();
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 hardwareMap.get(DcMotorEx.class, "frontLeft"),
                 hardwareMap.get(DcMotorEx.class, "frontRight"),
-                new SparkFunOTOSOdometry(photoSensor)
+                new IMUOdometry(gyro)
         );
-        driveTrain.setPositionDrive(1000, 0, 1000, 0);
     }
 
     @Override
@@ -119,4 +122,11 @@ public class OdometryOpMode extends OpMode {
         telemetry.addLine(String.format("OTOS Firmware Version: v%d.%d", fwVersion.major, fwVersion.minor));
         telemetry.update();
     }
+
+    @Override
+    public void start() {
+        driveTrain.updatePosition();
+        driveTrain.setPositionDrive(5000, 0, 1000, 0);
+    }
+
 }
