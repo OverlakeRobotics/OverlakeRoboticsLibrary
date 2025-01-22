@@ -39,6 +39,13 @@ public class OdometryOpMode extends OpMode {
     public void loop() {
         driveTrain.updatePosition();
         driveTrain.drive();
+        telemetry.addData("Distance Left", driveTrain.getPositionDriveDistanceLeft());
+        telemetry.addData("Direction", driveTrain.getPositionDriveDirection());
+        telemetry.addData("", "");
+        telemetry.addData("Forward Counts Left", driveTrain.getForwardCountsLeft());
+        telemetry.addData("Strafe Counts Left", driveTrain.getStrafeCountsLeft());
+        telemetry.addData("Turn Counts Left", driveTrain.getTurnCountsLeft());
+        telemetry.update();
     }
 
     private void configureOtos(SparkFunOTOS photoSensor) {
@@ -52,7 +59,7 @@ public class OdometryOpMode extends OpMode {
         // OpModes if using the non-default value.
         // myOtos.setLinearUnit(DistanceUnit.METER);
         photoSensor.setLinearUnit(DistanceUnit.INCH);
-        // myOtos.setAngularUnit(AnguleUnit.RADIANS);
+        // myOtos.setAngularUnit(AngularUnit.RADIANS);
         photoSensor.setAngularUnit(AngleUnit.DEGREES);
 
         // Assuming you've mounted your sensor to a robot and it's not centered,
@@ -126,7 +133,7 @@ public class OdometryOpMode extends OpMode {
     @Override
     public void start() {
         driveTrain.updatePosition();
-        driveTrain.setPositionDrive(5000, 0, 1000, 0);
+        driveTrain.setPositionDrive(2500, 0, 1000, 0);
     }
 
 }

@@ -39,7 +39,6 @@ public class AprilTagOdometry implements OdometryModule {
                 double xPos = detection.robotPose.getPosition().x - startPosition.getX(DistanceUnit.INCH);
                 double yPos = detection.robotPose.getPosition().y - startPosition.getY(DistanceUnit.INCH);
                 double hPos = detection.robotPose.getOrientation().getYaw() - startPosition.getHeading(AngleUnit.DEGREES);
-                int currentAprilTagID = detection.id;
                 position = new Pose2D(DistanceUnit.INCH, xPos, yPos, AngleUnit.DEGREES, hPos);
                 canSeeAprilTag = true;
                 break;

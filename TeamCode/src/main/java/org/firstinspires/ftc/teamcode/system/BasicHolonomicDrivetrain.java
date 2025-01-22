@@ -76,10 +76,12 @@ public class BasicHolonomicDrivetrain {
     // Parameters:
     //      - DcMotorEx.RunMode mode: The mode to set the motors to.
     protected void setMotorMode(DcMotorEx.RunMode mode) {
-        backLeft.setMode(mode);
-        backRight.setMode(mode);
-        frontLeft.setMode(mode);
-        frontRight.setMode(mode);
+        if (backLeft.getMode() != mode) {
+            backLeft.setMode(mode);
+            backRight.setMode(mode);
+            frontLeft.setMode(mode);
+            frontRight.setMode(mode);
+        }
     }
 
     // Behavior: Sets the drive velocity given a forward velocity, a strafe velocity, and a turn
@@ -118,10 +120,24 @@ public class BasicHolonomicDrivetrain {
                 break;
 
             case POSITION_DRIVE:
-                if (!isDriving()) {
-                    setDriveState(DriveState.STOPPED);
-                }
-                setVelocity(forward, forward, forward, forward);
+//                if (!isDriving()) {
+//                    setDriveState(DriveState.STOPPED);
+//                    break;
+//                }
+                double backLeftDif = (getBackLeftTarget() - getBackLeftPosition());
+                double backRightDif = (getBackRightTarget() - getBackRightPosition());
+                double frontLeftDif = (getFrontLeftTarget() - getFrontLeftPosition());
+                double frontRightDif = (getFrontRightTarget() - getFrontRightPosition());
+
+                double max = Math.max(Math.max(Math.abs(backLeftDif), Math.abs(backRightDif)),
+                        Math.max(Math.abs(frontLeftDif), Math.abs(frontRightDif)));
+                backLeftDif /= max;
+                backRightDif /= max;
+                frontLeftDif /= max;
+                frontRightDif /= max;
+
+                setVelocity(forward * backLeftDif, forward * backRightDif,
+                        forward * frontLeftDif, forward * frontRightDif);
                 break;
         }
     }
@@ -194,9 +210,59 @@ public class BasicHolonomicDrivetrain {
     public void setPositionDrive(int distance, double direction, double velocity) {
         double forwardCounts = distance * Math.cos(Math.toRadians(direction));
         double strafeCounts = distance * Math.sin(Math.toRadians(direction)) * FORWARD_TO_STRAFE_RATIO;
-        Log.d("Counts", "ForwardCounts: " + forwardCounts);
-        Log.d("Counts", "StrafeCounts: " + strafeCounts);
         setPositionDrive(forwardCounts, strafeCounts, 0, velocity);
+    }
+
+    // Behavior: Gets the number of counts the robot needs to move forward to finish the current
+    //           position drive.
+    // Returns: The number of forward counts remaining in the current position drive as an int.
+    public int getForwardCountsLeft() {
+        if (currentDriveState == DriveState.POSITION_DRIVE) {
+            return ((getBackLeftTarget() - getBackLeftPosition()) +
+                    (getBackRightTarget() - getBackRightPosition()) +
+                    (getFrontLeftTarget() - getFrontLeftPosition()) +
+                    (getFrontRightTarget() - getFrontRightPosition())) / 4;
+        }
+        return 0;
+    }
+
+    // Behavior: Gets the number of counts the robot needs to strafe to finish the current
+    //           position drive.
+    // Returns: The number of strafe counts remaining in the current position drive as an int.
+    public int getStrafeCountsLeft() {
+        if (currentDriveState == DriveState.POSITION_DRIVE) {
+            return ((getBackLeftTarget() - getBackLeftPosition()) -
+                    (getBackRightTarget() - getBackRightPosition()) -
+                    (getFrontLeftTarget() - getFrontLeftPosition()) +
+                    (getFrontRightTarget() - getFrontRightPosition())) / 4;
+        }
+        return 0;
+    }
+
+    // Behavior: Gets the number of counts the robot needs to turn to finish the current
+    //           position drive.
+    // Returns: The number of turn counts remaining in the current position drive as an int.
+    public int getTurnCountsLeft() {
+        if (currentDriveState == DriveState.POSITION_DRIVE) {
+            return ((getBackLeftTarget() - getBackLeftPosition()) -
+                    (getBackRightTarget() - getBackRightPosition()) +
+                    (getFrontLeftTarget() - getFrontLeftPosition()) -
+                    (getFrontRightTarget() - getFrontRightPosition())) / 4;
+        }
+        return 0;
+    }
+
+    // Behavior: Gets the distance from the destination left in the current position drive, in
+    //           counts.
+    // Returns: A double containing the distance to the destination in counts.
+    public int getPositionDriveDistanceLeft() {
+        return (int)Math.hypot(getForwardCountsLeft(), getStrafeCountsLeft() * FORWARD_TO_STRAFE_RATIO);
+    }
+
+    // Behavior: Gets the direction of the current position drive.
+    // Returns: A double, containing the direction of the current position drive in degrees.
+    public double getPositionDriveDirection() {
+        return Math.toDegrees(Math.atan2(getStrafeCountsLeft() * FORWARD_TO_STRAFE_RATIO, getForwardCountsLeft()));
     }
 
     // Behavior: Stops the robot by setting the motor velocities to 0.
@@ -217,9 +283,6 @@ public class BasicHolonomicDrivetrain {
                 break;
 
             case VELOCITY_DRIVE:
-                setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
-                break;
-
             case STOPPED:
                 setMotorMode(DcMotor.RunMode.RUN_USING_ENCODER);
                 break;
