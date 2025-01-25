@@ -44,12 +44,12 @@ public class SensorSparkFunOTOS extends OpMode {
     @Override
     public void init() {
         // Get a reference to the sensor
-        myOtos = hardwareMap.get(SparkFunOTOS.class, "sensor_otos");
+        myOtos = hardwareMap.get(SparkFunOTOS.class, "photosensor");
 
-        frontLeft = hardwareMap.get(DcMotorEx.class, "FRONTLEFT");
-        backLeft = hardwareMap.get(DcMotorEx.class, "BACKLEFT");
-        frontRight = hardwareMap.get(DcMotorEx.class, "FRONTRIGHT");
-        backRight = hardwareMap.get(DcMotorEx.class, "BACKRIGHT");
+        frontLeft = hardwareMap.get(DcMotorEx.class, "frontLeft");
+        backLeft = hardwareMap.get(DcMotorEx.class, "backLeft");
+        frontRight = hardwareMap.get(DcMotorEx.class, "frontRight");
+        backRight = hardwareMap.get(DcMotorEx.class, "backRight");
 
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.REVERSE);

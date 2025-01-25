@@ -15,7 +15,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     private static final double P_GAIN = 50;
     private static final boolean DO_STOPPED_HEADING_CORRECTION = true;
+    private static final double MIN_DIST_TO_STOP = 0.5;
     private boolean doPositionHeadingCorrection;
+    private boolean positionDriveUsingOdometry;
     private final OdometryModule odometry;
     private Pose2D currentPosition;
     private Pose2D wantedPosition;
@@ -32,32 +34,12 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     @Override
     public void setVelocity(double backLeftVelocity, double backRightVelocity,
                             double frontLeftVelocity, double frontRightVelocity) {
-        Log.d("Heading Correction Test", "**DID HEADING CORRECTION 1**");
-        Log.d("Heading Correction Test", "Current State: " + currentDriveState);
-        Log.d("Heading Correction Test", "Do Position Heading Correction: " + doPositionHeadingCorrection);
         if (doPositionHeadingCorrection && currentDriveState == DriveState.POSITION_DRIVE) {
-            Log.d("Heading Correction Test", "**DID HEADING CORRECTION 2**");
-//            double correction = getHeadingCorrection();
-//            Log.d("Heading Correction Test", "Correction Power: " + correction);
-//            Log.d("Heading Correction Test", "Wanted Heading: " + wantedPosition.getHeading(AngleUnit.DEGREES));
-//            Log.d("Heading Correction Test", "Current Heading: " + currentPosition.getHeading(AngleUnit.DEGREES));
-//
-//            // Test this tmrw
-//            backLeftVelocity -= correction;
-//            backRightVelocity += correction;
-//            frontLeftVelocity -= correction;
-//            frontRightVelocity += correction;
-//
-//            double min = Math.min(Math.min(backLeftVelocity, backRightVelocity),
-//                                  Math.min(frontLeftVelocity, frontRightVelocity));
-//
-//            if (min < 0) {
-//                min = Math.abs(min);
-//                backLeftVelocity += min;
-//                backRightVelocity += min;
-//                frontLeftVelocity += min;
-//                frontRightVelocity += min;
-//            }
+            double correction = getHeadingCorrection();
+            backLeftVelocity -= correction;
+            backRightVelocity += correction;
+            frontLeftVelocity -= correction;
+            frontRightVelocity += correction;
         }
         super.setVelocity(backLeftVelocity, backRightVelocity, frontLeftVelocity, frontRightVelocity);
     }
@@ -75,12 +57,18 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                 break;
 
             case POSITION_DRIVE:
-                super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentPosition.getHeading(AngleUnit.DEGREES), forward);
+                if (positionDriveUsingOdometry) {
+                    setPositionDrive(wantedPosition, forward);
+                    if (getDistanceToDestination() < MIN_DIST_TO_STOP) {
+                        setDriveState(DriveState.STOPPED);
+                    }
+                } else {
+                    super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentPosition.getHeading(AngleUnit.DEGREES), forward);
+                }
                 super.drive();
                 break;
 
             case VELOCITY_DRIVE:
-                Log.d("Heading Correction Test", "BAD THINGS HAPPENED; STATE " + currentDriveState);
                 wantedPosition = currentPosition;
                 super.drive();
                 break;
@@ -90,9 +78,16 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
     public void setPositionDrive(int backLeftTarget, int backRightTarget, int frontLeftTarget,
                                  int frontRightTarget, double velocity, double wantedH) {
-        super.setPositionDrive(backLeftTarget, backRightTarget, frontLeftTarget, frontRightTarget, velocity);
+        setPositionDrive(backLeftTarget, backRightTarget, frontLeftTarget, frontRightTarget, velocity);
         setWantedHeading(wantedH);
         doPositionHeadingCorrection = true;
+    }
+
+    @Override
+    public void setPositionDrive(int backLeftTarget, int backRightTarget, int frontLeftTarget, int frontRightTarget, double velocity) {
+        super.setPositionDrive(backLeftTarget, backRightTarget, frontLeftTarget, frontRightTarget, velocity);
+        doPositionHeadingCorrection = true;
+        positionDriveUsingOdometry = false;
     }
 
     // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
@@ -108,6 +103,22 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         positionDriveDirection = direction;
         setWantedHeading(wantedH);
         doPositionHeadingCorrection = true;
+    }
+
+    public void setPositionDrive(Pose2D wantedPosition, double velocity) {
+        this.wantedPosition = wantedPosition;
+        forward = velocity;
+        double dx = this.wantedPosition.getX(DistanceUnit.INCH) - this.currentPosition.getX(DistanceUnit.INCH);
+        double dy = this.wantedPosition.getY(DistanceUnit.INCH) - this.currentPosition.getY(DistanceUnit.INCH);
+        int counts = (int) Math.round(Math.hypot(dx * FORWARD_COUNTS_PER_INCH, dy * FORWARD_COUNTS_PER_INCH));
+        double direction = Math.toDegrees(Math.atan2(dx, dy));
+        setPositionDrive(counts, direction, velocity, wantedPosition.getHeading(AngleUnit.DEGREES));
+        positionDriveUsingOdometry = true;
+    }
+
+    public double getDistanceToDestination() {
+        return Math.hypot(Math.pow(wantedPosition.getX(DistanceUnit.INCH) - currentPosition.getX(DistanceUnit.INCH), 2),
+                          Math.pow(wantedPosition.getY(DistanceUnit.INCH) - currentPosition.getY(DistanceUnit.INCH), 2));
     }
 
     // Behavior: Sets the wanted heading of the robot.
@@ -135,6 +146,10 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     public void updatePosition() {
         odometry.updatePosition();
         currentPosition = odometry.getPosition();
+    }
+
+    public boolean isStopped() {
+        return currentDriveState == DriveState.STOPPED;
     }
 
     public Pose2D getPosition() {

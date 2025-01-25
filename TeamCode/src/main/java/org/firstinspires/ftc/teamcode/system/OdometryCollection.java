@@ -41,18 +41,22 @@ public class OdometryCollection implements OdometryModule {
 
         Pose2D highestPriorityPosition = null;
         int highestPositionPriority = Integer.MIN_VALUE;
+        OdometryModule highestPositionPriorityModule = null;
         Pose2D highestPriorityHeading = null;
         int highestHeadingPriority = Integer.MIN_VALUE;
+        OdometryModule highestHeadingPriorityModule = null;
 
         for (OdometryModule module : odometryModules) {
             if (module.isPositionAccurate() && module.getPositionPriority() > highestPositionPriority) {
                 highestPriorityPosition = module.getPosition();
                 highestPositionPriority = module.getPositionPriority();
+                highestPositionPriorityModule = module;
             }
 
             if (module.isHeadingAccurate() && module.getHeadingPriority() > highestHeadingPriority) {
                 highestPriorityHeading = module.getPosition();
                 highestHeadingPriority = module.getHeadingPriority();
+                highestHeadingPriorityModule = module;
             }
         }
 
@@ -79,14 +83,15 @@ public class OdometryCollection implements OdometryModule {
         }
 
         for (OdometryModule module : odometryModules) {
-            if (module.doPositionResetToHigherPriority() && highestPriorityPosition != null) {
+            if (module.doPositionResetToHigherPriority() && highestPriorityPosition != null &&
+                    highestPositionPriorityModule != module) {
                 Pose2D modulePosition = module.getPosition();
                 module.setPosition(new Pose2D(DistanceUnit.INCH, highestPriorityPosition.getX(DistanceUnit.INCH),
                         highestPriorityPosition.getY(DistanceUnit.INCH), AngleUnit.DEGREES,
                         modulePosition.getHeading(AngleUnit.DEGREES)));
             }
 
-            if (module.doHeadingResetToHigherPriority() && highestPriorityHeading != null) {
+            if (module.doHeadingResetToHigherPriority() && highestPriorityHeading != null && highestPositionPriorityModule != module) {
                 Pose2D modulePosition = module.getPosition();
                 module.setPosition(new Pose2D(DistanceUnit.INCH, modulePosition.getX(DistanceUnit.INCH),
                         modulePosition.getY(DistanceUnit.INCH), AngleUnit.DEGREES,

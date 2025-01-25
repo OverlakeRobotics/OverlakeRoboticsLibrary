@@ -5,14 +5,17 @@
 package org.firstinspires.ftc.teamcode.system;
 import android.util.Log;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
+@Config
 public class BasicHolonomicDrivetrain {
     public static final double MAX_STOP_VELOCITY = 1e-2;
     public static final int MAX_VELOCITY = 3000;
-    public static final double FORWARD_TO_STRAFE_RATIO = 1; // 1.19148;
+    public static double FORWARD_TO_STRAFE_RATIO = 1.075028; // 1.19148;
+    public static double FORWARD_COUNTS_PER_INCH = 30;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;
     private final DcMotorEx frontLeft;
@@ -120,10 +123,10 @@ public class BasicHolonomicDrivetrain {
                 break;
 
             case POSITION_DRIVE:
-//                if (!isDriving()) {
-//                    setDriveState(DriveState.STOPPED);
-//                    break;
-//                }
+                if (!isDriving()) {
+                    setDriveState(DriveState.STOPPED);
+                    break;
+                }
                 double backLeftDif = (getBackLeftTarget() - getBackLeftPosition());
                 double backRightDif = (getBackRightTarget() - getBackRightPosition());
                 double frontLeftDif = (getFrontLeftTarget() - getFrontLeftPosition());
@@ -190,14 +193,10 @@ public class BasicHolonomicDrivetrain {
     //                        truncated before all the calculations are complete.
     //      - double velocity: The velocity to move the robot at.
     public void setPositionDrive(double forward, double strafe, double turn, double velocity) {
-        backLeft.setTargetPosition(backLeft.getCurrentPosition() + (int)(forward + strafe - turn));
-        backRight.setTargetPosition(backRight.getCurrentPosition() + (int)(forward - strafe + turn));
-        frontLeft.setTargetPosition(frontLeft.getCurrentPosition() + (int)(forward - strafe - turn));
-        frontRight.setTargetPosition(frontRight.getCurrentPosition() + (int)(forward + strafe + turn));
-        this.forward = velocity;
-        this.strafe = 0;
-        this.turn = 0;
-        setDriveState(DriveState.POSITION_DRIVE);
+        setPositionDrive(backLeft.getCurrentPosition() + (int)(forward + strafe - turn),
+                backRight.getCurrentPosition() + (int)(forward - strafe + turn),
+                frontLeft.getCurrentPosition() + (int)(forward - strafe - turn),
+                frontRight.getCurrentPosition() + (int)(forward + strafe + turn), velocity);
     }
 
     // Behavior: An overloaded method of setPositionDrive that sets the motor targets based on

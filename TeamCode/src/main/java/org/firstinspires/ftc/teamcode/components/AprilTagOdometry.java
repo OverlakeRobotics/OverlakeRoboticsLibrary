@@ -23,7 +23,7 @@ public class AprilTagOdometry implements OdometryModule {
     public AprilTagOdometry(AprilTagProcessor aprilTagProcessor, Pose2D startPosition) {
         this.aprilTagProcessor = aprilTagProcessor;
 
-        positionPriority = 4;
+        positionPriority = 2;
         headingPriority = 1;
         doPositionReset = false;
         doHeadingReset = false;

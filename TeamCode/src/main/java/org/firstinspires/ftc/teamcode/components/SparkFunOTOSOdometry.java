@@ -17,13 +17,13 @@ public class SparkFunOTOSOdometry implements OdometryModule {
     private boolean doHeadingReset;
 
     public SparkFunOTOSOdometry(SparkFunOTOS sparkFunSensor) {
-        sparkFunSensor.setLinearUnit(DistanceUnit.INCH);
-        sparkFunSensor.setAngularUnit(AngleUnit.DEGREES);
+//        sparkFunSensor.setLinearUnit(DistanceUnit.INCH);
+//        sparkFunSensor.setAngularUnit(AngleUnit.DEGREES);
         this.sparkFunSensor = sparkFunSensor;
 
         positionPriority = 1;
         headingPriority = 3;
-        doPositionReset = true;
+        doPositionReset = false;
         doHeadingReset = false;
     }
 
@@ -32,7 +32,7 @@ public class SparkFunOTOSOdometry implements OdometryModule {
     }
 
     public Pose2D getPosition() {
-        return new Pose2D(DistanceUnit.INCH, position.x, position.y, AngleUnit.DEGREES, position.h);
+        return new Pose2D(DistanceUnit.INCH, -position.x, position.y, AngleUnit.DEGREES, position.h);
     }
 
     public void setPosition(Pose2D position) {

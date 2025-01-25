@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.tests;
 
 import android.util.Log;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -10,35 +11,68 @@ import com.qualcomm.robotcore.hardware.IMU;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.components.IMUOdometry;
 import org.firstinspires.ftc.teamcode.components.SparkFunOTOSOdometry;
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
+import org.firstinspires.ftc.teamcode.system.OdometryCollection;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
+import org.firstinspires.ftc.teamcode.system.OdometryModule;
 
+import java.util.ArrayList;
+import java.util.List;
+
+@Config
 @TeleOp(name = "Odometry OpMode", group = "TeleOp")
 public class OdometryOpMode extends OpMode {
 
+    public static int distance = 2160;
+    public static double direction = 0;
+    public static double velocity = 2000;
     private OdometryHolonomicDrivetrain driveTrain;
+    private List<Pose2D> waypoints;
+    private int currentWaypoint = 0;
 
     @Override
     public void init() {
-//        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
-//        configureOtos(photoSensor);
+        List<OdometryModule> odometryModules = new ArrayList<OdometryModule>();
+
+        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
+        configureOtos(photoSensor);
         IMU gyro = hardwareMap.get(IMU.class, "imu");
         gyro.resetYaw();
+
+        odometryModules.add(new IMUOdometry(gyro));
+        odometryModules.add(new SparkFunOTOSOdometry(photoSensor));
+        OdometryModule odometryCollection = new OdometryCollection(odometryModules);
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 hardwareMap.get(DcMotorEx.class, "frontLeft"),
                 hardwareMap.get(DcMotorEx.class, "frontRight"),
-                new IMUOdometry(gyro)
+                odometryCollection
         );
+
+        waypoints = new ArrayList<>();
+        waypoints.add(new Pose2D(DistanceUnit.INCH, 0, 90, AngleUnit.DEGREES, 0));
+        waypoints.add(new Pose2D(DistanceUnit.INCH, -90, 90, AngleUnit.DEGREES, 0));
+        waypoints.add(new Pose2D(DistanceUnit.INCH, -90, 0, AngleUnit.DEGREES, 0));
+        waypoints.add(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
     }
 
     @Override
     public void loop() {
         driveTrain.updatePosition();
         driveTrain.drive();
+        if (driveTrain.isStopped() && currentWaypoint + 1 < waypoints.size()) {
+            currentWaypoint++;
+            driveTrain.setPositionDrive(waypoints.get(currentWaypoint), velocity);
+        }
+        Pose2D robotPosition = driveTrain.getPosition();
+        telemetry.addData("X", robotPosition.getX(DistanceUnit.INCH));
+        telemetry.addData("Y", robotPosition.getY(DistanceUnit.INCH));
+        telemetry.addData("Heading", robotPosition.getHeading(AngleUnit.DEGREES));
+        telemetry.addData("", "");
         telemetry.addData("Distance Left", driveTrain.getPositionDriveDistanceLeft());
         telemetry.addData("Direction", driveTrain.getPositionDriveDirection());
         telemetry.addData("", "");
@@ -133,7 +167,7 @@ public class OdometryOpMode extends OpMode {
     @Override
     public void start() {
         driveTrain.updatePosition();
-        driveTrain.setPositionDrive(2500, 0, 1000, 0);
+        driveTrain.setPositionDrive(waypoints.get(currentWaypoint), velocity);
+//        driveTrain.setPositionDrive(distance, direction, velocity, driveTrain.getPosition().getHeading(AngleUnit.DEGREES));
     }
-
 }
