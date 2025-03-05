@@ -23,7 +23,7 @@ public class SparkFunOTOSOdometry implements OdometryModule {
 
         positionPriority = 1;
         headingPriority = 3;
-        doPositionReset = false;
+        doPositionReset = true;
         doHeadingReset = false;
     }
 
@@ -32,7 +32,7 @@ public class SparkFunOTOSOdometry implements OdometryModule {
     }
 
     public Pose2D getPosition() {
-        return new Pose2D(DistanceUnit.INCH, -position.x, position.y, AngleUnit.DEGREES, position.h);
+        return new Pose2D(DistanceUnit.INCH, position.x, position.y, AngleUnit.DEGREES, position.h);
     }
 
     public void setPosition(Pose2D position) {

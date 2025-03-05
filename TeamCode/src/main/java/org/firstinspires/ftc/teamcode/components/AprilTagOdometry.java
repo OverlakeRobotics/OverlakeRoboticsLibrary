@@ -2,6 +2,8 @@
 
 package org.firstinspires.ftc.teamcode.components;
 
+import android.util.Log;
+
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
@@ -11,6 +13,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import java.util.List;
 
 public class AprilTagOdometry implements OdometryModule {
+    private static final double MAX_ACCURATE_DISTANCE = 40;
     private final AprilTagProcessor aprilTagProcessor;
     private Pose2D position;
     private Pose2D startPosition;
@@ -32,6 +35,7 @@ public class AprilTagOdometry implements OdometryModule {
 
     public void updatePosition() {
         List<AprilTagDetection> detections = aprilTagProcessor.getDetections();
+        canSeeAprilTag = false;
         // Process detections that have a valid robotPose
         for (AprilTagDetection detection : detections) {
             if (detection.robotPose != null) {
@@ -40,10 +44,13 @@ public class AprilTagOdometry implements OdometryModule {
                 double yPos = detection.robotPose.getPosition().y - startPosition.getY(DistanceUnit.INCH);
                 double hPos = detection.robotPose.getOrientation().getYaw() - startPosition.getHeading(AngleUnit.DEGREES);
                 position = new Pose2D(DistanceUnit.INCH, xPos, yPos, AngleUnit.DEGREES, hPos);
-                canSeeAprilTag = true;
+                double distance = Math.hypot(detection.metadata.fieldPosition.get(0) - detection.robotPose.getPosition().x,
+                                             detection.metadata.fieldPosition.get(1) - detection.robotPose.getPosition().y);
+                if (distance < MAX_ACCURATE_DISTANCE) {
+                    canSeeAprilTag = true;
+                }
                 break;
             }
-            canSeeAprilTag = false;
         }
     }
 
