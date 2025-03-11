@@ -3,128 +3,52 @@ package org.firstinspires.ftc.teamcode.tests;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
-import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
-import org.firstinspires.ftc.teamcode.components.AprilTagOdometry;
 import org.firstinspires.ftc.teamcode.components.IMUOdometry;
 import org.firstinspires.ftc.teamcode.components.SparkFunOTOSOdometry;
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
-import org.firstinspires.ftc.teamcode.system.OdometryCollection;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
-import org.firstinspires.ftc.teamcode.system.OdometryModule;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-
-import java.util.ArrayList;
-import java.util.List;
 
 @Config
 @TeleOp(name = "Odometry OpMode", group = "TeleOp")
 public class OdometryOpMode extends OpMode {
 
-    public static int distance = 2160;
-    public static double direction = 0;
-    public static double velocity = 1000;
-    private static final Pose2D STARTING_POSITION = new Pose2D(DistanceUnit.INCH, 60, -49, AngleUnit.DEGREES, 0);
-    private static final Position cameraPosition = new Position(DistanceUnit.INCH,
-            -9.5, 0, 2.6, 0);
-    private static final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(AngleUnit.DEGREES,
-            -90, -90, 0, 0);
-    private final ElapsedTime runtime = new ElapsedTime();
-    private VisionPortal visionPortal;
+    public static int velocity = 1000;
     private OdometryHolonomicDrivetrain driveTrain;
-    private List<Pose2D> waypoints;
-    private int currentWaypoint = 0;
-    private double lastTime;
 
     @Override
     public void init() {
-        List<OdometryModule> odometryModules = new ArrayList<>();
-
-        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
-        configureOtos(photoSensor);
-
-        // IMU.Parameters params = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.LEFT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
+//        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
+//        configureOtos(photoSensor);
         IMU gyro = hardwareMap.get(IMU.class, "imu");
-//        gyro.initialize(params);
-//        Log.d("Heading", "Gyro Heading: " + gyro.getRobotYawPitchRollAngles().getYaw());
-
-        odometryModules.add(new IMUOdometry(gyro));
-        odometryModules.add(new SparkFunOTOSOdometry(photoSensor));
-
-//        WebcamName camera = hardwareMap.get(WebcamName.class, "webcam");
-
-//        AprilTagProcessor aprilTag = new AprilTagProcessor.Builder()
-//                .setCameraPose(cameraPosition, cameraOrientation)
-//                .build();
-
-//        VisionPortal.Builder builder = new VisionPortal.Builder();
-//        builder.setCamera(camera);
-//        builder.addProcessor(aprilTag);
-
-//        visionPortal = builder.build();
-
-//        odometryModules.add(new AprilTagOdometry(aprilTag, STARTING_POSITION));
-
-        OdometryModule odometryCollection = new OdometryCollection(odometryModules);
+        gyro.resetYaw();
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 hardwareMap.get(DcMotorEx.class, "frontLeft"),
                 hardwareMap.get(DcMotorEx.class, "frontRight"),
-                odometryCollection
+                new IMUOdometry(gyro)
         );
-        odometryCollection.updatePosition();
-
-        waypoints = new ArrayList<>();
-        waypoints.add(new Pose2D(DistanceUnit.INCH, 0, 70, AngleUnit.DEGREES, 0));
-        //waypoints.add(new Pose2D(DistanceUnit.INCH, -90, 90, AngleUnit.DEGREES, 0));
-//        waypoints.add(new Pose2D(DistanceUnit.INCH, -85, 0, AngleUnit.DEGREES, 0));
-//        waypoints.add(new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0));
     }
 
     @Override
     public void loop() {
         driveTrain.updatePosition();
-        double currentTime = runtime.seconds();
-        Log.d("Time", "Update Position Time: " + (runtime.seconds() - currentTime));
-        currentTime = runtime.seconds();
         driveTrain.drive();
-        Log.d("Time", "Drive Time: " + (runtime.seconds() - currentTime));
-        if (driveTrain.isStopped() && currentWaypoint + 1 < waypoints.size()) {
-            currentWaypoint++;
-            driveTrain.setPositionDrive(waypoints.get(currentWaypoint), velocity);
-        }
-//        driveTrain.setPositionDrive(waypoints.get(currentWaypoint), velocity);
-        Pose2D robotPosition = driveTrain.getPosition();
-        currentTime = runtime.seconds();
-        double dt = currentTime - lastTime;
-        Log.d("Time", "Total delta time: " + dt);
-        lastTime = currentTime;
-//        telemetry.addData("Delta Time", dt);
-//        telemetry.addData("X", robotPosition.getX(DistanceUnit.INCH));
-//        telemetry.addData("Y", robotPosition.getY(DistanceUnit.INCH));
-//        telemetry.addData("Heading", robotPosition.getHeading(AngleUnit.DEGREES));
-//        telemetry.addData("", "");
-//        telemetry.addData("Distance Left", driveTrain.getPositionDriveDistanceLeft());
-//        telemetry.addData("Direction", driveTrain.getPositionDriveDirection());
-//        telemetry.addData("", "");
-//        telemetry.addData("Forward Counts Left", driveTrain.getForwardCountsLeft());
-//        telemetry.addData("Strafe Counts Left", driveTrain.getStrafeCountsLeft());
-//        telemetry.addData("Turn Counts Left", driveTrain.getTurnCountsLeft());
-//        telemetry.update();
+        telemetry.addData("Distance Left", driveTrain.getPositionDriveDistanceLeft());
+        telemetry.addData("Direction", driveTrain.getPositionDriveDirection());
+        telemetry.addData("", "");
+        telemetry.addData("Forward Counts Left", driveTrain.getForwardCountsLeft());
+        telemetry.addData("Strafe Counts Left", driveTrain.getStrafeCountsLeft());
+        telemetry.addData("Turn Counts Left", driveTrain.getTurnCountsLeft());
+        telemetry.update();
     }
 
     private void configureOtos(SparkFunOTOS photoSensor) {
@@ -212,8 +136,7 @@ public class OdometryOpMode extends OpMode {
     @Override
     public void start() {
         driveTrain.updatePosition();
-        driveTrain.setPositionDriveCorrection(distance, direction, velocity, 0);
-//        driveTrain.setPositionDrive(waypoints.get(currentWaypoint), velocity);
-//        driveTrain.setPositionDrive(distance, direction, velocity, driveTrain.getPosition().getHeading(AngleUnit.DEGREES));
+        driveTrain.setPositionDriveCorrection(2500, 0, velocity, 0);
     }
+
 }

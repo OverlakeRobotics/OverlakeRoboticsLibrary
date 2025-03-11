@@ -6,20 +6,28 @@ package org.firstinspires.ftc.teamcode.system;
 
 import android.util.Log;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 
+@Config
 public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     private static final double P_GAIN = 50;
     private static final boolean DO_STOPPED_HEADING_CORRECTION = true;
     private static final double MIN_DIST_TO_STOP = 0.5;
     private static final double COUNTS_PER_DEGREE = 10;
+    public static double TURN_OFFSET_MULTIPLIER = 1;
+    private static final ElapsedTime runtime = new ElapsedTime();
+    private double lastTime;
+    private double deltaTime;
     private boolean doPositionHeadingCorrection;
     private boolean positionDriveUsingOdometry;
     private final OdometryModule odometry;
+    private double lastHeading;
     private Pose2D currentPosition;
     private Pose2D wantedPosition;
     private double positionDriveDirection;
@@ -27,6 +35,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     public OdometryHolonomicDrivetrain(DcMotorEx backLeft, DcMotorEx backRight, DcMotorEx frontLeft,
                                        DcMotorEx frontRight, OdometryModule odometry) {
         super(backLeft, backRight, frontLeft, frontRight);
+        runtime.reset();
         this.odometry = odometry;
         this.currentPosition = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
         this.wantedPosition = currentPosition;
@@ -51,9 +60,22 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                         setDriveState(DriveState.STOPPED);
                     }
                 } else if (doPositionHeadingCorrection) {
+                    double currentHeading = currentPosition.getHeading(AngleUnit.DEGREES);
+//                    // make sure theta isnt zero for radius so it doesnt become NaN.
+//                    double theta = currentHeading - lastHeading;
+//                    double arcLen = forward * deltaTime;
+//                    double radius = Math.abs(360 * arcLen / (2 * Math.PI * theta));
+//                    double xOffset = radius - Math.cos(theta) * radius;
+//                    double yOffset = Math.sin(theta) * radius;
+//                    double angleOffset = theta == 0 ? 0 : Math.toDegrees(Math.atan2(xOffset, yOffset));
+                    double dh = Math.toRadians(normalize(currentPosition.getHeading(AngleUnit.DEGREES) - lastHeading)) * TURN_OFFSET_MULTIPLIER;
+                    double angleOffset = dh == 0 ? 0 : Math.toDegrees(Math.atan((-Math.cos(dh) + 1) / Math.sin(dh)));
+                    Log.d("Angle Offset", "offset: " + angleOffset);
+                    Log.d("Angle Offset", "original: " + positionDriveDirection);
+                    Log.d("Angle Offset", "dh: " + dh);
                     //super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentPosition.getHeading(AngleUnit.DEGREES), forward);
-                    super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentPosition.getHeading(AngleUnit.DEGREES),
-                           COUNTS_PER_DEGREE * normalize(wantedPosition.getHeading(AngleUnit.DEGREES) - currentPosition.getHeading(AngleUnit.DEGREES)), forward);
+                    super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentHeading - angleOffset,
+                           COUNTS_PER_DEGREE * normalize(wantedPosition.getHeading(AngleUnit.DEGREES) - currentHeading - angleOffset), forward);
                 } else {
                     super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentPosition.getHeading(AngleUnit.DEGREES), forward);
                 }
@@ -65,6 +87,9 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                 super.drive();
                 break;
         }
+        deltaTime = runtime.seconds() - lastTime;
+        lastTime = runtime.seconds();
+        lastHeading = currentPosition.getHeading(AngleUnit.DEGREES);
     }
 
     // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
@@ -91,6 +116,9 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
 
     // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
     public void setPositionDriveCorrection(int distance, double direction, double velocity, double wantedH) {
+        deltaTime = runtime.seconds() - lastTime;
+        lastTime = runtime.seconds();
+        lastHeading = currentPosition.getHeading(AngleUnit.DEGREES);
         super.setPositionDrive(distance, direction - currentPosition.getHeading(AngleUnit.DEGREES),
                 COUNTS_PER_DEGREE * normalize(wantedH - currentPosition.getHeading(AngleUnit.DEGREES)), velocity);
         positionDriveDirection = direction;
