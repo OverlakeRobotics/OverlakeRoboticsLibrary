@@ -116,6 +116,7 @@ public class BasicHolonomicDrivetrain {
     public void drive() {
         switch (currentDriveState) {
             case STOPPED:
+                Log.d("Debug", "Stopped in Basic");
                 setPositionDrive(getBackLeftPosition(), getBackRightPosition(), getFrontLeftPosition(), getFrontRightPosition(), 1000);
                 break;
 

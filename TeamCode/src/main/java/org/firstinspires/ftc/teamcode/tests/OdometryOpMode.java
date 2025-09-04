@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.tests;
 import android.util.Log;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.rev.RevHubOrientationOnRobot;
 import com.qualcomm.hardware.sparkfun.SparkFunOTOS;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -28,6 +29,9 @@ public class OdometryOpMode extends OpMode {
 //        SparkFunOTOS photoSensor = hardwareMap.get(SparkFunOTOS.class, "photosensor");
 //        configureOtos(photoSensor);
         IMU gyro = hardwareMap.get(IMU.class, "imu");
+        // Change this to match orientation of IMU on the robot
+        IMU.Parameters params = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.RIGHT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
+        gyro.initialize(params);
         gyro.resetYaw();
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),

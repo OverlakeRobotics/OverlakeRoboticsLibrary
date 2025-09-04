@@ -47,6 +47,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         switch (currentDriveState) {
             case STOPPED:
                 if (DO_STOPPED_HEADING_CORRECTION) {
+                    Log.d("Debug", "Correcting Stopped Heading");
                     moveRobot(0, 0, getHeadingCorrectionVelocity());
                     break;
                 }
