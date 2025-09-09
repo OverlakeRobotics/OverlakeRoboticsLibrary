@@ -129,8 +129,9 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
 
     public void setPositionDrive(Pose2D wantedPosition, double velocity) {
         this.wantedPosition = wantedPosition;
-        double dx = -(this.wantedPosition.getX(DistanceUnit.INCH) - this.currentPosition.getX(DistanceUnit.INCH));
-        double dy = this.wantedPosition.getY(DistanceUnit.INCH) - this.currentPosition.getY(DistanceUnit.INCH);
+        // Swapped dy and dx so pinpoint works
+        double dy = (this.wantedPosition.getX(DistanceUnit.INCH) - this.currentPosition.getX(DistanceUnit.INCH));
+        double dx = (this.wantedPosition.getY(DistanceUnit.INCH) - this.currentPosition.getY(DistanceUnit.INCH));
         int counts = (int) Math.round(Math.hypot(dx * FORWARD_COUNTS_PER_INCH, dy * FORWARD_COUNTS_PER_INCH));
         double direction = Math.toDegrees(Math.atan2(dx, dy));
         setPositionDriveCorrection(counts, direction, velocity, wantedPosition.getHeading(AngleUnit.DEGREES));

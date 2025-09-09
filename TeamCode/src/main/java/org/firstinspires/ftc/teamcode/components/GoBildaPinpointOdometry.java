@@ -28,6 +28,7 @@ public class GoBildaPinpointOdometry implements OdometryModule {
     }
 
     public void updatePosition() {
+        pinpoint.update();
         position = pinpoint.getPosition();
     }
 
