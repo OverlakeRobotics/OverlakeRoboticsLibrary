@@ -17,8 +17,8 @@ public class BasicHolonomicDrivetrain {
     public static final int MAX_VELOCITY = 3000;
     public static double FORWARD_TO_STRAFE_RATIO = /* 1.0822; */ 1.19148;
     public static double FORWARD_COUNTS_PER_INCH = 30;
-    public static double COUNTS_TO_SLOW_DOWN = 500;
-    public static double MIN_POSITION_VELOCITY = 200;
+    public static double COUNTS_TO_SLOW_DOWN = 1000;
+    public static double MIN_POSITION_VELOCITY = 150;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;
     private final DcMotorEx frontLeft;

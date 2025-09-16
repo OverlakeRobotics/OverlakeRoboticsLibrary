@@ -15,7 +15,7 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 @Config
 @TeleOp(name = "TeleOp Example", group = "TeleOp")
 public class TeleOpExample extends OpMode {
-    public static final double MAX_VELOCITY = 1500;
+    public static final double MAX_VELOCITY = 3000;
     private BasicHolonomicDrivetrain driveTrain; // Change to OdometryHolonomicDrivetrain for heading correction
     private double lastTime;
     private final ElapsedTime runtime = new ElapsedTime();

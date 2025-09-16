@@ -23,15 +23,25 @@ import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 @Config
 @TeleOp(name = "Odometry OpMode", group = "TeleOp")
 public class OdometryOpMode extends OpMode {
+    // Change to your actual offsets. See GoBildaPinpointDriver.setOffsets() for details on measuring offsets.
+    public static class Offsets {
+        public double yOffset = -168.0; // mm
+        public double xOffset = -84.0; // mm
+    }
+
+    public static Offsets OFFSETS = new Offsets();
 
     public static int velocity = 2000;
+
+    public Pose2D wantedPosition = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
+    public static double inchesToChangeDirection = 2.0;
     private OdometryHolonomicDrivetrain driveTrain;
 
     private final Pose2D[] drivePoints = {
-            new Pose2D(DistanceUnit.INCH, 106, 0, AngleUnit.DEGREES, 0),
-            new Pose2D(DistanceUnit.INCH, 106, -85, AngleUnit.DEGREES, 0),
-            new Pose2D(DistanceUnit.INCH, 5, -85, AngleUnit.DEGREES, 0),
-            new Pose2D(DistanceUnit.INCH, 5, 0, AngleUnit.DEGREES, 0),
+            new Pose2D(DistanceUnit.INCH, 106, 0, AngleUnit.DEGREES, -90),
+            new Pose2D(DistanceUnit.INCH, 106, -96, AngleUnit.DEGREES, 180),
+            new Pose2D(DistanceUnit.INCH, 14, -96, AngleUnit.DEGREES, 90),
+            new Pose2D(DistanceUnit.INCH, 14, 0, AngleUnit.DEGREES, 0),
     };
     private int currentPoint = 0;
 
@@ -44,6 +54,7 @@ public class OdometryOpMode extends OpMode {
         gyro.resetYaw();
 
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
+        pinpointDriver.setOffsets(OFFSETS.xOffset, OFFSETS.yOffset);
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
@@ -62,12 +73,23 @@ public class OdometryOpMode extends OpMode {
         Pose2D pos = driveTrain.getPosition();
         Log.d("Position", "X: " + pos.getX(DistanceUnit.INCH) + ", Y: " + pos.getY(DistanceUnit.INCH) + ", Heading: " + pos.getHeading(AngleUnit.DEGREES));
 
-        if (driveTrain.isStopped()) {
+        if (driveTrain.getDistanceToDestination() < inchesToChangeDirection) {
             currentPoint++;
             if (currentPoint < drivePoints.length) {
                 driveTrain.setPositionDrive(drivePoints[currentPoint], velocity);
             }
         }
+//        double newX = wantedPosition.getX(DistanceUnit.INCH) - gamepad1.left_stick_y * 3;
+//        double newY = wantedPosition.getY(DistanceUnit.INCH) - gamepad1.left_stick_x * 3;
+//
+//        wantedPosition = new Pose2D(DistanceUnit.INCH,
+//                newX,
+//                newY,
+//                AngleUnit.DEGREES,
+//                Math.toDegrees(Math.atan2(newY, newX)) + 180
+//        );
+//
+//        driveTrain.setPositionDrive(wantedPosition, velocity);
     }
 
     @Override
@@ -75,5 +97,6 @@ public class OdometryOpMode extends OpMode {
         driveTrain.updatePosition();
 //        driveTrain.setPositionDriveCorrection(2500, 0, velocity, 30);
         driveTrain.setPositionDrive(drivePoints[currentPoint], velocity);
+//        driveTrain.setPositionDrive(wantedPosition, velocity);
     }
 }
