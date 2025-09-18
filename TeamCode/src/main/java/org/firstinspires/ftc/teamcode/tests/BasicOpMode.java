@@ -5,6 +5,7 @@ import android.util.Log;
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
@@ -27,6 +28,9 @@ public class BasicOpMode extends OpMode {
                 hardwareMap.get(DcMotorEx.class, "frontLeft"),
                 hardwareMap.get(DcMotorEx.class, "frontRight")
         );
+
+        DcMotor intake = hardwareMap.get(DcMotorEx.class, "intake");
+        intake.setPower(0.8);
 
         driveTrain.setVelocityDrive(velocity, 0, 0);
     }

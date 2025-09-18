@@ -213,7 +213,6 @@ public class BasicHolonomicDrivetrain {
                 frontLeft.getCurrentPosition() + (int)(forward - strafe - turn),
                 frontRight.getCurrentPosition() + (int)(forward + strafe + turn), velocity);
         countsAffectedByTurn = (int)turn;
-        Log.d("Testing Counts", "Did the thing: " + countsAffectedByTurn);
     }
 
     // Behavior: An overloaded method of setPositionDrive that sets the motor targets based on

@@ -17,13 +17,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 @Config
 public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     private static final double P_GAIN = 50;
-    private static final boolean DO_STOPPED_HEADING_CORRECTION = true;
+    private static final boolean DO_STOPPED_HEADING_CORRECTION = false;
     private static final double MIN_DIST_TO_STOP = 0.5;
     private static final double COUNTS_PER_DEGREE = 10;
     public static double TURN_OFFSET_MULTIPLIER = 1;
     private static final ElapsedTime runtime = new ElapsedTime();
-    private double lastTime;
-    private double deltaTime;
     private boolean doPositionHeadingCorrection;
     private boolean positionDriveUsingOdometry;
     private final OdometryModule odometry;
@@ -47,7 +45,6 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         switch (currentDriveState) {
             case STOPPED:
                 if (DO_STOPPED_HEADING_CORRECTION) {
-                    Log.d("Debug", "Correcting Stopped Heading");
                     moveRobot(0, 0, getHeadingCorrectionVelocity());
                     break;
                 }
@@ -62,13 +59,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                     }
                 } else if (doPositionHeadingCorrection) {
                     double currentHeading = currentPosition.getHeading(AngleUnit.DEGREES);
-//                    // make sure theta isnt zero for radius so it doesnt become NaN.
-//                    double theta = currentHeading - lastHeading;
-//                    double arcLen = forward * deltaTime;
-//                    double radius = Math.abs(360 * arcLen / (2 * Math.PI * theta));
-//                    double xOffset = radius - Math.cos(theta) * radius;
-//                    double yOffset = Math.sin(theta) * radius;
-//                    double angleOffset = theta == 0 ? 0 : Math.toDegrees(Math.atan2(xOffset, yOffset));
+                    // TODO: Make sure angle offset is good so the robot travels in a straight path.
                     double dh = Math.toRadians(normalize(currentPosition.getHeading(AngleUnit.DEGREES) - lastHeading)) * TURN_OFFSET_MULTIPLIER;
                     double angleOffset = dh == 0 ? 0 : Math.toDegrees(Math.atan((-Math.cos(dh) + 1) / Math.sin(dh)));
                     Log.d("Angle Offset", "offset: " + angleOffset);
@@ -88,12 +79,10 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                 super.drive();
                 break;
         }
-        deltaTime = runtime.seconds() - lastTime;
-        lastTime = runtime.seconds();
         lastHeading = currentPosition.getHeading(AngleUnit.DEGREES);
     }
 
-    // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
+    // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.
     public void setPositionDriveCorrection(int backLeftTarget, int backRightTarget, int frontLeftTarget,
                                  int frontRightTarget, double velocity, double wantedH) {
         setPositionDrive(backLeftTarget, backRightTarget, frontLeftTarget, frontRightTarget, velocity);
@@ -108,17 +97,15 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         positionDriveUsingOdometry = false;
     }
 
-    // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
+    // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.n.
     public void setPositionDriveCorrection(double forward, double strafe, double turn, double velocity, double wantedH) {
         super.setPositionDrive(forward, strafe, turn, velocity);
         setWantedHeading(wantedH);
         doPositionHeadingCorrection = true;
     }
 
-    // Behavior: Overloads setPositionDrive to also include a wantedH for heading correction.
+    // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.
     public void setPositionDriveCorrection(int distance, double direction, double velocity, double wantedH) {
-        deltaTime = runtime.seconds() - lastTime;
-        lastTime = runtime.seconds();
         lastHeading = currentPosition.getHeading(AngleUnit.DEGREES);
         super.setPositionDrive(distance, direction - currentPosition.getHeading(AngleUnit.DEGREES),
                 COUNTS_PER_DEGREE * normalize(wantedH - currentPosition.getHeading(AngleUnit.DEGREES)), velocity);
@@ -127,6 +114,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         doPositionHeadingCorrection = true;
     }
 
+    // Behavior Overloads the setPositionDrive function to go to a specified location using odometry.
     public void setPositionDrive(Pose2D wantedPosition, double velocity) {
         this.wantedPosition = wantedPosition;
         // Swapped dy and dx so pinpoint works
@@ -153,7 +141,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
 
     // Behavior: Gets the turn velocity needed to heading correct the robot.
     // Returns: The turn velocity.
-    private double getHeadingCorrectionVelocity() {
+    public double getHeadingCorrectionVelocity() {
         return P_GAIN * normalize(normalize(wantedPosition.getHeading(AngleUnit.DEGREES)) -
                          normalize(currentPosition.getHeading(AngleUnit.DEGREES)));
     }

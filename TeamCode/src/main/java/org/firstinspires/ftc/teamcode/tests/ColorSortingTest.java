@@ -36,6 +36,7 @@ import com.qualcomm.hardware.dfrobot.HuskyLens;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.Servo;
 
 import org.firstinspires.ftc.robotcore.internal.system.Deadline;
@@ -65,14 +66,13 @@ public class ColorSortingTest extends LinearOpMode {
 
     private final int READ_PERIOD = 1;
 
-    private HuskyLens huskyLens;
-    private Servo servo;
-
     @Override
     public void runOpMode()
     {
-        huskyLens = hardwareMap.get(HuskyLens.class, "huskylens");
-        servo = hardwareMap.get(Servo.class, "sorter");
+        HuskyLens huskyLens = hardwareMap.get(HuskyLens.class, "huskylens");
+        Servo servo = hardwareMap.get(Servo.class, "sorter");
+
+        DcMotor intake = hardwareMap.get(DcMotor.class, "intake");
 
         /*
          * This sample rate limits the reads solely to allow a user time to observe
@@ -141,16 +141,18 @@ public class ColorSortingTest extends LinearOpMode {
              *
              * Returns an empty array if no objects are seen.
              */
+            intake.setPower(0.8);
+
             HuskyLens.Block[] blocks = huskyLens.blocks();
             telemetry.addData("Block count", blocks.length);
             HuskyLens.Block largestBlock = null;
             int largestSize = 0;
-            for (int i = 0; i < blocks.length; i++) {
-                telemetry.addData("Block", blocks[i].toString());
-                int currSize = blocks[i].height * blocks[i].width;
+            for (HuskyLens.Block block : blocks) {
+                telemetry.addData("Block", block.toString());
+                int currSize = block.height * block.width;
                 if (currSize > largestSize) {
                     largestSize = currSize;
-                    largestBlock = blocks[i];
+                    largestBlock = block;
                 }
                 /*
                  * Here inside the FOR loop, you could save or evaluate specific info for the currently recognized Bounding Box:
@@ -164,7 +166,7 @@ public class ColorSortingTest extends LinearOpMode {
             }
 
             if (largestBlock != null) {
-                servo.setPosition(largestBlock.id - 1);
+                servo.setPosition(((largestBlock.id - 1) * 0.2) + 0.8);
             }
 
             telemetry.update();
