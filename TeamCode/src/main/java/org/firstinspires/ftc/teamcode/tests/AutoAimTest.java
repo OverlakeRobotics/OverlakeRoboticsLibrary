@@ -114,7 +114,7 @@ public class AutoAimTest extends OpMode {
             currentPreset = 1;
         }
 
-        if (currentPreset >= 0 && (Math.abs(gamepad1.left_stick_x) > 0.001 || Math.abs(gamepad1.left_stick_y) > 0.001) || Math.abs(gamepad1.right_stick_x) > 0.001) {
+        if (currentPreset >= 0 && (Math.abs(gamepad1.left_stick_x) > 0.001 || Math.abs(gamepad1.left_stick_y) > 0.001 || Math.abs(gamepad1.right_stick_x) > 0.001)) {
             currentPreset = -1;
             autoLock = true;
         }
