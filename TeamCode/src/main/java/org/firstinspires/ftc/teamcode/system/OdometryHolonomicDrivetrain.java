@@ -20,7 +20,6 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     private static final boolean DO_STOPPED_HEADING_CORRECTION = false;
     private static final double MIN_DIST_TO_STOP = 0.5;
     private static final double COUNTS_PER_DEGREE = 10;
-    public static double TURN_OFFSET_MULTIPLIER = 1;
     private static final ElapsedTime runtime = new ElapsedTime();
     private boolean doPositionHeadingCorrection;
     private boolean positionDriveUsingOdometry;
@@ -60,8 +59,8 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                 } else if (doPositionHeadingCorrection) {
                     double currentHeading = currentPosition.getHeading(AngleUnit.DEGREES);
                     // TODO: Make sure angle offset is good so the robot travels in a straight path.
-                    double dh = Math.toRadians(normalize(currentPosition.getHeading(AngleUnit.DEGREES) - lastHeading)) * TURN_OFFSET_MULTIPLIER;
-                    double angleOffset = dh == 0 ? 0 : Math.toDegrees(Math.atan((-Math.cos(dh) + 1) / Math.sin(dh)));
+                    double dh = normalize(currentPosition.getHeading(AngleUnit.DEGREES) - lastHeading);
+                    double angleOffset = dh / 2; // Only works of dt is relatively constant
                     Log.d("Angle Offset", "offset: " + angleOffset);
                     Log.d("Angle Offset", "original: " + positionDriveDirection);
                     Log.d("Angle Offset", "dh: " + dh);
@@ -75,11 +74,23 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                 break;
 
             case VELOCITY_DRIVE:
-                wantedPosition = currentPosition;
+                if (DO_STOPPED_HEADING_CORRECTION) {
+                    wantedPosition = currentPosition;
+                }
                 super.drive();
                 break;
         }
         lastHeading = currentPosition.getHeading(AngleUnit.DEGREES);
+    }
+
+    // Behavior: Sets the velocity of the robot while accounting for a field centric view.
+    public void setVelocityDriveFieldCentric(double forward, double strafe, double turn) {
+        double heading = currentPosition.getHeading(AngleUnit.RADIANS);
+        super.setVelocityDrive(
+            forward * Math.cos(heading) + strafe * Math.sin(heading),
+            strafe * Math.cos(heading) - forward * Math.sin(heading),
+            turn
+        );
     }
 
     // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.
@@ -120,6 +131,8 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         // Swapped dy and dx so pinpoint works
         double dy = (this.wantedPosition.getX(DistanceUnit.INCH) - this.currentPosition.getX(DistanceUnit.INCH));
         double dx = (this.wantedPosition.getY(DistanceUnit.INCH) - this.currentPosition.getY(DistanceUnit.INCH));
+        // TODO: Make not just FORWARD_COUNTS_PER_INCH but a combination of strafe and forward counts per inch.
+        //       The robot may be rotated so dx isn't just forward and dy isnt just strafe.
         int counts = (int) Math.round(Math.hypot(dx * FORWARD_COUNTS_PER_INCH, dy * FORWARD_COUNTS_PER_INCH));
         double direction = Math.toDegrees(Math.atan2(dx, dy));
         setPositionDriveCorrection(counts, direction, velocity, wantedPosition.getHeading(AngleUnit.DEGREES));
@@ -164,5 +177,9 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
 
     public Pose2D getPosition() {
         return currentPosition;
+    }
+
+    public void setPosition(Pose2D position) {
+        odometry.setPosition(position);
     }
 }
