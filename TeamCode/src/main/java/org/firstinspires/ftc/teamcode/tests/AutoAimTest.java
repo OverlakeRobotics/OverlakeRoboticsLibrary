@@ -78,8 +78,6 @@ public class AutoAimTest extends OpMode {
 
     @Override
     public void loop() {
-        driveTrain.updatePosition();
-
         LLResult result = limelight.getLatestResult();
         LLResultTypes.FiducialResult targetApril = null;
         if (result.isValid()) {
@@ -88,7 +86,7 @@ public class AutoAimTest extends OpMode {
                 Pose3D robotPose = tag.getRobotPoseFieldSpace();
                 Position pos = robotPose.getPosition();
                 telemetry.addData("April Tag", "ID: %d, Family: %s, X: %.2f, Y: %.2f", tag.getFiducialId(), tag.getFamily(), tag.getTargetXDegrees(), tag.getTargetYDegrees());
-                telemetry.addData("Tag Robot Pose", "X: %.2f, Y: %.2f, Z: %.2f, H: %.2f", pos.x, pos.y, pos.z, robotPose.getOrientation().getYaw());
+                telemetry.addData("Tag Robot Pose", "X: %.2f, Y: %.2f, Z: %.2f, H: %.2f", pos.x, pos.y, pos.z, robotPose.getOrientation().getYaw(AngleUnit.DEGREES));
 
                 if (tag.getFiducialId() == targetID) {
                     targetApril = tag;
@@ -97,15 +95,17 @@ public class AutoAimTest extends OpMode {
             }
         }
 
+        driveTrain.updatePosition();
+
         double wantedHeading;
         if (targetApril != null) {
             wantedHeading = driveTrain.getPosition().getHeading(AngleUnit.DEGREES) - targetApril.getTargetXDegrees();
         } else {
             Pose2D pos = driveTrain.getPosition();
-            wantedHeading = Math.atan2(
+            wantedHeading = Math.toDegrees(Math.atan2(
                     goalY - pos.getY(DistanceUnit.INCH),
                     goalX - pos.getX(DistanceUnit.INCH)
-            );
+            ));
         }
 
         if (gamepad1.a) {
@@ -123,7 +123,7 @@ public class AutoAimTest extends OpMode {
             Pose2D wantedPosition = new Pose2D(
                 DistanceUnit.INCH,
                 presetPositions[currentPreset].getX(DistanceUnit.INCH),
-                presetPositions[currentPreset].getX(DistanceUnit.INCH),
+                presetPositions[currentPreset].getY(DistanceUnit.INCH),
                 AngleUnit.DEGREES,
                 wantedHeading
             );
@@ -135,7 +135,7 @@ public class AutoAimTest extends OpMode {
                 autoLock = true;
             }
 
-            if (Math.abs(turn) > 0.1) {
+            if (Math.abs(turn) > 2) {
                 autoLock = false;
             }
 
