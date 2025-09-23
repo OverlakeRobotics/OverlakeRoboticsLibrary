@@ -31,14 +31,18 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     private Pose2D wantedPosition;
     private double positionDriveDirection;
     private Pose2D[] currentPath;
+    private double[] pathDistances;
     private int currentPoint = -1;
 
     public OdometryHolonomicDrivetrain(DcMotorEx backLeft, DcMotorEx backRight, DcMotorEx frontLeft,
                                        DcMotorEx frontRight, OdometryModule odometry) {
         super(backLeft, backRight, frontLeft, frontRight);
         this.odometry = odometry;
-        this.currentPosition = new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
+        this.odometry.updatePosition();
+        this.currentPosition = this.odometry.getPosition();
         this.wantedPosition = currentPosition;
+
+        lastHeading = this.currentPosition.getHeading(AngleUnit.DEGREES);
     }
     
     // Behavior: Overrides super classes drive method to include odometry and heading correction.
@@ -132,12 +136,12 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     //      - double velocity: How fast the robot will move to the wanted position, in counts/s
     public void setPositionDrive(Pose2D wantedPosition, double velocity) {
         this.wantedPosition = wantedPosition;
-        double dy = (this.wantedPosition.getX(DistanceUnit.INCH) - this.currentPosition.getX(DistanceUnit.INCH));
-        double dx = (this.wantedPosition.getY(DistanceUnit.INCH) - this.currentPosition.getY(DistanceUnit.INCH));
+        double dx = (this.wantedPosition.getX(DistanceUnit.INCH) - this.currentPosition.getX(DistanceUnit.INCH));
+        double dy = (this.wantedPosition.getY(DistanceUnit.INCH) - this.currentPosition.getY(DistanceUnit.INCH));
         // TODO: Make not just FORWARD_COUNTS_PER_INCH but a combination of strafe and forward counts per inch.
         //       The robot may be rotated so dx isn't just forward and dy isnt just strafe.
         int counts = (int) Math.round(Math.hypot(dx * FORWARD_COUNTS_PER_INCH, dy * FORWARD_COUNTS_PER_INCH));
-        double direction = Math.toDegrees(Math.atan2(dx, dy));
+        double direction = Math.toDegrees(Math.atan2(dy, dx));
         setPositionDriveCorrection(counts, direction, velocity, wantedPosition.getHeading(AngleUnit.DEGREES));
         positionDriveUsingOdometry = true;
     }
@@ -149,6 +153,15 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     //      - Pose2D[] path: The path for the robot to follow as an array of Pose2Ds.
     //      - double velocity: How fast the robot should follow the path.
     public void setPositionDrive(Pose2D[] path, double velocity) {
+        if (currentPoint < 0) {
+            double[] distances = new double[path.length];
+            for (int i = path.length - 2; i >= 0; i--) {
+                distances[i] = distances[i + 1] + dist(path[i], path[i + 1]);
+            }
+
+            pathDistances = distances;
+        }
+
         int nextPoint = Math.max(0, currentPoint);
         currentPath = path;
         setPositionDrive(currentPath[nextPoint], velocity);
@@ -167,13 +180,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     @Override
     public int getPositionDriveDistanceLeft() {
         if (currentPoint >= 0) {
-            int add = 1;
-            double totalDist = dist(currentPosition, currentPath[currentPoint]);
-            while (currentPoint + add < currentPath.length) {
-                totalDist += dist(currentPath[currentPoint + add - 1], currentPath[currentPoint + add]);
-                add++;
-            }
-
+            double totalDist = pathDistances[currentPoint] + dist(currentPosition, currentPath[currentPoint]);
             return (int)(totalDist * FORWARD_COUNTS_PER_INCH);
         } else {
             return super.getPositionDriveDistanceLeft();
