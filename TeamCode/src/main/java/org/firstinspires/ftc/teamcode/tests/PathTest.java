@@ -34,34 +34,38 @@ public class PathTest extends OpMode {
 
     private OdometryHolonomicDrivetrain driveTrain;
 
-    private final Pose2D[] positions = {
-            new Pose2D(DistanceUnit.INCH,   0.00,   0.00, AngleUnit.DEGREES,   0.0),
-            new Pose2D(DistanceUnit.INCH,   1.64,  12.42, AngleUnit.DEGREES,  15.0),
-            new Pose2D(DistanceUnit.INCH,   6.43,  24.00, AngleUnit.DEGREES,  30.0),
-            new Pose2D(DistanceUnit.INCH,  14.06,  33.94, AngleUnit.DEGREES,  45.0),
-            new Pose2D(DistanceUnit.INCH,  24.00,  41.57, AngleUnit.DEGREES,  60.0),
-            new Pose2D(DistanceUnit.INCH,  35.58,  46.36, AngleUnit.DEGREES,  75.0),
-            new Pose2D(DistanceUnit.INCH,  48.00,  48.00, AngleUnit.DEGREES,  90.0),
-            new Pose2D(DistanceUnit.INCH,  60.42,  46.36, AngleUnit.DEGREES, 105.0),
-            new Pose2D(DistanceUnit.INCH,  72.00,  41.57, AngleUnit.DEGREES, 120.0),
-            new Pose2D(DistanceUnit.INCH,  81.94,  33.94, AngleUnit.DEGREES, 135.0),
-            new Pose2D(DistanceUnit.INCH,  89.57,  24.00, AngleUnit.DEGREES, 150.0),
-            new Pose2D(DistanceUnit.INCH,  94.36,  12.42, AngleUnit.DEGREES, 165.0),
-            new Pose2D(DistanceUnit.INCH,  96.00,   0.00, AngleUnit.DEGREES, 180.0)
+    public Pose2D startPos = new Pose2D(DistanceUnit.INCH, -63, 15, AngleUnit.DEGREES, 0);
+
+    public final Pose2D[] positions = new Pose2D[]{
+            new Pose2D(DistanceUnit.INCH, -63.0, 15.0, AngleUnit.DEGREES, 0.0),
+            new Pose2D(DistanceUnit.INCH, -56.735, 15.411, AngleUnit.DEGREES, 7.5),
+            new Pose2D(DistanceUnit.INCH, -50.577, 16.636, AngleUnit.DEGREES, 15.0),
+            new Pose2D(DistanceUnit.INCH, -44.631, 18.654, AngleUnit.DEGREES, 22.5),
+            new Pose2D(DistanceUnit.INCH, -39.0, 21.431, AngleUnit.DEGREES, 30.0),
+            new Pose2D(DistanceUnit.INCH, -33.779, 24.919, AngleUnit.DEGREES, 37.5),
+            new Pose2D(DistanceUnit.INCH, -29.059, 29.059, AngleUnit.DEGREES, 45.0),
+            new Pose2D(DistanceUnit.INCH, -24.919, 33.779, AngleUnit.DEGREES, 52.5),
+            new Pose2D(DistanceUnit.INCH, -21.431, 39.0, AngleUnit.DEGREES, 60.0),
+            new Pose2D(DistanceUnit.INCH, -18.654, 44.631, AngleUnit.DEGREES, 67.5),
+            new Pose2D(DistanceUnit.INCH, -16.636, 50.577, AngleUnit.DEGREES, 75.0),
+            new Pose2D(DistanceUnit.INCH, -15.411, 56.735, AngleUnit.DEGREES, 82.5),
+            new Pose2D(DistanceUnit.INCH, -15.0, 63.0, AngleUnit.DEGREES, 90.0),
+            new Pose2D(DistanceUnit.INCH, -15.411, 69.265, AngleUnit.DEGREES, 97.5),
+            new Pose2D(DistanceUnit.INCH, -16.636, 75.423, AngleUnit.DEGREES, 105.0),
+            new Pose2D(DistanceUnit.INCH, -18.654, 81.369, AngleUnit.DEGREES, 112.5),
+            new Pose2D(DistanceUnit.INCH, -21.431, 87.0, AngleUnit.DEGREES, 120.0),
+            new Pose2D(DistanceUnit.INCH, -24.919, 92.221, AngleUnit.DEGREES, 127.5),
+            new Pose2D(DistanceUnit.INCH, -29.059, 96.941, AngleUnit.DEGREES, 135.0),
+            new Pose2D(DistanceUnit.INCH, -33.779, 101.081, AngleUnit.DEGREES, 142.5),
+            new Pose2D(DistanceUnit.INCH, -39.0, 104.569, AngleUnit.DEGREES, 150.0),
+            new Pose2D(DistanceUnit.INCH, -44.631, 107.346, AngleUnit.DEGREES, 157.5),
+            new Pose2D(DistanceUnit.INCH, -50.577, 109.364, AngleUnit.DEGREES, 165.0),
+            new Pose2D(DistanceUnit.INCH, -56.735, 110.589, AngleUnit.DEGREES, 172.5),
+            new Pose2D(DistanceUnit.INCH, -63.0, 111.0, AngleUnit.DEGREES, -180.0),
     };
 
     @Override
     public void init() {
-        IMU gyro = hardwareMap.get(IMU.class, "imu");
-        IMU.Parameters params = new IMU.Parameters(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.RIGHT, RevHubOrientationOnRobot.UsbFacingDirection.UP));
-        gyro.initialize(params);
-        gyro.resetYaw();
-
-        // Swapped because I got it wrong at first
-        for (int i = 0; i < positions.length; i++) {
-            positions[i] = new Pose2D(DistanceUnit.INCH, positions[i].getY(DistanceUnit.INCH), positions[i].getX(DistanceUnit.INCH), AngleUnit.DEGREES, positions[i].getHeading(AngleUnit.DEGREES));
-        }
-
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
         pinpointDriver.setOffsets(OFFSETS.xOffset, OFFSETS.yOffset);
         driveTrain = new OdometryHolonomicDrivetrain(
@@ -69,9 +73,9 @@ public class PathTest extends OpMode {
                 hardwareMap.get(DcMotorEx.class, "backRight"),
                 hardwareMap.get(DcMotorEx.class, "frontLeft"),
                 hardwareMap.get(DcMotorEx.class, "frontRight"),
-//                new IMUOdometry(gyro)
                 new GoBildaPinpointOdometry(pinpointDriver)
         );
+        driveTrain.setPosition(startPos);
     }
 
     @Override
@@ -82,9 +86,6 @@ public class PathTest extends OpMode {
 
     @Override
     public void start() {
-        driveTrain.updatePosition();
-//        driveTrain.setPositionDriveCorrection(2500, 0, velocity, 30);
         driveTrain.setPositionDrive(positions, velocity);
-//        driveTrain.setPositionDrive(wantedPosition, velocity);
     }
 }

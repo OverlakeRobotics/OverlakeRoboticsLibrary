@@ -55,6 +55,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                 break;
 
             case POSITION_DRIVE:
+                Log.d("Current Point", "Drive Current Point: " + currentPoint);
                 if (currentPoint >= 0) {
                     double dist = getDistanceToDestination();
                     if (currentPoint == currentPath.length - 1) {
@@ -65,7 +66,9 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                         currentPoint++;
                     }
 
-                    setPositionDrive(currentPath[currentPoint], forward);
+                    int nextPoint = currentPoint;
+                    setPositionDrive(currentPath[nextPoint], forward);
+                    currentPoint = nextPoint;
                 } else if (positionDriveUsingOdometry) {
                     setPositionDrive(wantedPosition, forward);
                     if (getDistanceToDestination() < MIN_DIST_TO_STOP && Math.abs(getTurnCountsLeft() / COUNTS_PER_DEGREE) < MIN_ANGLE_DIF_TO_STOP) {
@@ -153,19 +156,16 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     //      - Pose2D[] path: The path for the robot to follow as an array of Pose2Ds.
     //      - double velocity: How fast the robot should follow the path.
     public void setPositionDrive(Pose2D[] path, double velocity) {
-        if (currentPoint < 0) {
-            double[] distances = new double[path.length];
-            for (int i = path.length - 2; i >= 0; i--) {
-                distances[i] = distances[i + 1] + dist(path[i], path[i + 1]);
-            }
-
-            pathDistances = distances;
+        double[] distances = new double[path.length];
+        for (int i = path.length - 2; i >= 0; i--) {
+            distances[i] = distances[i + 1] + dist(path[i], path[i + 1]);
         }
 
-        int nextPoint = Math.max(0, currentPoint);
+        pathDistances = distances;
+
         currentPath = path;
-        setPositionDrive(currentPath[nextPoint], velocity);
-        currentPoint = nextPoint;
+        setPositionDrive(currentPath[0], velocity);
+        currentPoint = 0;
     }
 
     // Behavior: Gets the distance from the current position to the wanted position.
