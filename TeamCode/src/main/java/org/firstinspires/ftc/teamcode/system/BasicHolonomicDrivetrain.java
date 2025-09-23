@@ -1,6 +1,7 @@
 // This class contains basic movement for robots with holonomic movement (Mecanum or Omni)
 // It includes functions that set velocity to the motors, set target positions to the motors, and
 // stop the robot.
+// Positive heading is to the left, negative heading is to the right.
 
 package org.firstinspires.ftc.teamcode.system;
 import android.util.Log;

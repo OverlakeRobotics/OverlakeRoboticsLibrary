@@ -1,4 +1,5 @@
 // Implementation of the OdometryModule interface for SparkFunOTOS sensor.
+// TODO: Check if x and y are correct.
 
 package org.firstinspires.ftc.teamcode.components;
 
