@@ -50,13 +50,12 @@ public class AutoAimTest extends OpMode {
     private OdometryHolonomicDrivetrain driveTrain;
     private static final ElapsedTime runtime = new ElapsedTime();
 
-    private static final int targetID = 24;
+    private static final int targetID = 20;
 
     private boolean autoLock = false;
 
     @Override
     public void init() {
-
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
 
         limelight.pipelineSwitch(0);
@@ -74,6 +73,8 @@ public class AutoAimTest extends OpMode {
         driveTrain.setPosition(startPos);
 
         runtime.reset();
+
+        BasicHolonomicDrivetrain.COUNTS_TO_SLOW_DOWN = 500;
     }
 
     @Override
@@ -83,7 +84,7 @@ public class AutoAimTest extends OpMode {
         if (result.isValid()) {
             List<LLResultTypes.FiducialResult> aprilTags = result.getFiducialResults();
             for (LLResultTypes.FiducialResult tag : aprilTags) {
-                Pose3D robotPose = tag.getRobotPoseFieldSpace();
+                Pose3D robotPose = tag.getRobotPoseTargetSpace();
                 Position pos = robotPose.getPosition();
                 telemetry.addData("April Tag", "ID: %d, Family: %s, X: %.2f, Y: %.2f", tag.getFiducialId(), tag.getFamily(), tag.getTargetXDegrees(), tag.getTargetYDegrees());
                 telemetry.addData("Tag Robot Pose", "X: %.2f, Y: %.2f, Z: %.2f, H: %.2f", pos.x, pos.y, pos.z, robotPose.getOrientation().getYaw(AngleUnit.DEGREES));
@@ -96,6 +97,9 @@ public class AutoAimTest extends OpMode {
         }
 
         driveTrain.updatePosition();
+        Pose2D currentPos = driveTrain.getPosition();
+
+        telemetry.addData("Position", "X: %.2f, Y: %.2f, H: %.2f", currentPos.getX(DistanceUnit.INCH), currentPos.getY(DistanceUnit.INCH), currentPos.getHeading(AngleUnit.DEGREES));
 
         double wantedHeading;
         if (targetApril != null) {

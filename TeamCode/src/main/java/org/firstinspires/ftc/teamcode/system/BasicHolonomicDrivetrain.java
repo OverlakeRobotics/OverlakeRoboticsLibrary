@@ -15,8 +15,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class BasicHolonomicDrivetrain {
     public static final double MAX_STOP_VELOCITY = 1e-2;
     public static final int MAX_VELOCITY = 3000;
-    public static double FORWARD_TO_STRAFE_RATIO = /* 1.0822; */ 1.19148;
-    public static double FORWARD_COUNTS_PER_INCH = 30;
+    public static final double FORWARD_TO_STRAFE_RATIO = /* 1.0822; */ 1.19148;
+    public static final double FORWARD_COUNTS_PER_INCH = 30;
     public static double COUNTS_TO_SLOW_DOWN = 1000;
     public static double MIN_POSITION_VELOCITY = 150;
     private final DcMotorEx backLeft;
@@ -116,7 +116,6 @@ public class BasicHolonomicDrivetrain {
     public void drive() {
         switch (currentDriveState) {
             case STOPPED:
-                Log.d("Debug", "Stopped in Basic");
                 setPositionDrive(getBackLeftPosition(), getBackRightPosition(), getFrontLeftPosition(), getFrontRightPosition(), 1000);
                 break;
 
@@ -150,9 +149,6 @@ public class BasicHolonomicDrivetrain {
                 if (countsLeft < COUNTS_TO_SLOW_DOWN) {
                     velocity = MIN_POSITION_VELOCITY + (forward - MIN_POSITION_VELOCITY) * (countsLeft / COUNTS_TO_SLOW_DOWN);
                 }
-
-                Log.d("Velocity", "Velocity: " + velocity);
-                Log.d("Velocity", "Forward : " + forward);
 
                 setVelocity(velocity * backLeftDif, velocity * backRightDif,
                         velocity * frontLeftDif, velocity * frontRightDif);
