@@ -22,7 +22,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     private static final double MIN_DIST_TO_STOP = 0.5;
     private static final double COUNTS_PER_DEGREE = 10;
     private static final double MIN_ANGLE_DIF_TO_STOP = 1;
-    private static final double PATH_TOLERANCE = 3;
+    private double pathTolerance = 4;
     private boolean doPositionHeadingCorrection;
     private boolean positionDriveUsingOdometry;
     private final OdometryModule odometry;
@@ -51,19 +51,18 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         switch (currentDriveState) {
             case STOPPED:
             case VELOCITY_DRIVE:
-                super.drive();
                 break;
 
             case POSITION_DRIVE:
-                Log.d("Current Point", "Drive Current Point: " + currentPoint);
                 if (currentPoint >= 0) {
-                    double dist = getDistanceToDestination();
-                    if (currentPoint == currentPath.length - 1) {
-                        if (dist < MIN_DIST_TO_STOP && Math.abs(getTurnCountsLeft() / COUNTS_PER_DEGREE) < MIN_ANGLE_DIF_TO_STOP) {
-                            setDriveState(DriveState.STOPPED);
+                    boolean atNextPoint = true;
+                    while (atNextPoint) {
+                        if ((currentPoint != currentPath.length - 1) && getDistanceToDestination() < pathTolerance) {
+                            currentPoint++;
+                            wantedPosition = currentPath[currentPoint];
+                        } else {
+                            atNextPoint = false;
                         }
-                    } else if (dist < PATH_TOLERANCE) {
-                        currentPoint++;
                     }
 
                     int nextPoint = currentPoint;
@@ -71,18 +70,17 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
                     currentPoint = nextPoint;
                 } else if (positionDriveUsingOdometry) {
                     setPositionDrive(wantedPosition, forward);
-                    if (getDistanceToDestination() < MIN_DIST_TO_STOP && Math.abs(getTurnCountsLeft() / COUNTS_PER_DEGREE) < MIN_ANGLE_DIF_TO_STOP) {
-                        setDriveState(DriveState.STOPPED);
-                    }
                 } else if (doPositionHeadingCorrection) {
                     setPositionDriveCorrection(getPositionDriveDistanceLeft(), positionDriveDirection, forward, wantedPosition.getHeading(AngleUnit.DEGREES));
                 } else {
+                    // TODO: Check if this is right, because its using positionDriveDirection, but that is only set if doPositionHeadingCorrection is true.
                     super.setPositionDrive(getPositionDriveDistanceLeft(), positionDriveDirection - currentPosition.getHeading(AngleUnit.DEGREES), forward);
                 }
-                super.drive();                                                                                                                           
                 break;
         }
+
         lastHeading = currentPosition.getHeading(AngleUnit.DEGREES);
+        super.drive();
     }
 
     // Behavior: Sets the velocity of the robot while accounting for a field centric view.
@@ -98,14 +96,8 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         );
     }
 
-    // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.
-    public void setPositionDriveCorrection(int backLeftTarget, int backRightTarget, int frontLeftTarget,
-                                 int frontRightTarget, double velocity, double wantedH) {
-        setPositionDrive(backLeftTarget, backRightTarget, frontLeftTarget, frontRightTarget, velocity);
-        setWantedHeading(wantedH);
-        doPositionHeadingCorrection = true;
-    }
-
+    // Behavior: Overrides basic setPositionDrive so whenever a position drive is set, the state
+    //           of the current position drive is reset.
     @Override
     public void setPositionDrive(int backLeftTarget, int backRightTarget, int frontLeftTarget, int frontRightTarget, double velocity) {
         super.setPositionDrive(backLeftTarget, backRightTarget, frontLeftTarget, frontRightTarget, velocity);
@@ -115,17 +107,10 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     }
 
     // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.
-    public void setPositionDriveCorrection(double forward, double strafe, double turn, double velocity, double wantedH) {
-        super.setPositionDrive(forward, strafe, turn, velocity);
-        setWantedHeading(wantedH);
-        doPositionHeadingCorrection = true;
-    }
-
-    // Behavior: Method just like setPosition drive but also includes a wantedH for heading correction.
     public void setPositionDriveCorrection(int distance, double direction, double velocity, double wantedH) {
         double dh = normalize(currentPosition.getHeading(AngleUnit.DEGREES) - lastHeading);
         double angleOffset = dh / 2;
-        // TODO: Test angle offset.
+        // TODO: Test angle offset by driving in a straight line.
         super.setPositionDrive(distance, direction - currentPosition.getHeading(AngleUnit.DEGREES) - angleOffset,
                 COUNTS_PER_DEGREE * normalize(wantedH - currentPosition.getHeading(AngleUnit.DEGREES)), velocity);
         positionDriveDirection = direction;
@@ -150,7 +135,7 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
     }
 
     // Behavior: Has the robot drive along a path defined by a list of sequential points. The tolerance
-    //           for how close it has to stick to this path is defined by PATH_TOLERANCE. A higher value
+    //           for how close it has to stick to this path is defined by pathTolerance. A higher value
     //           will give less jitter, and a lower value will give more accuracy.
     // Parameters:
     //      - Pose2D[] path: The path for the robot to follow as an array of Pose2Ds.
@@ -168,6 +153,16 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         currentPoint = 0;
     }
 
+    // Behavior: Overloads setPositionDrive to include a tolerance when setting a path drive.
+    // Parameters:
+    //      - double tolerance: How far the robot can deviate from the path in inches. A lower tolerance
+    //                          will make the robot slower and jittery but more accurate, while a
+    //                          tolerance that is higher will be smoother but less accurate.
+    public void setPositionDrive(Pose2D[] path, double velocity, double tolerance) {
+        pathTolerance = tolerance;
+        setPositionDrive(path, velocity);
+    }
+
     // Behavior: Gets the distance from the current position to the wanted position.
     // Returns: A double, in inches, containing the distance to the destination.
     public double getDistanceToDestination() {
@@ -182,9 +177,19 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         if (currentPoint >= 0) {
             double totalDist = pathDistances[currentPoint] + dist(currentPosition, currentPath[currentPoint]);
             return (int)(totalDist * FORWARD_COUNTS_PER_INCH);
-        } else {
-            return super.getPositionDriveDistanceLeft();
         }
+
+        return super.getPositionDriveDistanceLeft();
+    }
+
+    @Override
+    public boolean isDriving() {
+        if (currentPoint >= 0) {
+            return !((currentPoint == currentPath.length - 1) && (getDistanceToDestination() < MIN_DIST_TO_STOP && Math.abs(getTurnCountsLeft() / COUNTS_PER_DEGREE) < MIN_ANGLE_DIF_TO_STOP));
+        } else if (positionDriveUsingOdometry) {
+            return !(getDistanceToDestination() < MIN_DIST_TO_STOP && Math.abs(getTurnCountsLeft() / COUNTS_PER_DEGREE) < MIN_ANGLE_DIF_TO_STOP);
+        }
+        return super.isDriving();
     }
 
     // Behavior: Sets the wanted heading of the robot.

@@ -18,8 +18,6 @@ public class BasicHolonomicDrivetrain {
     public static final int MAX_VELOCITY = 3000;
     public static final double FORWARD_TO_STRAFE_RATIO = /* 1.0822; */ 1.19148;
     public static final double FORWARD_COUNTS_PER_INCH = 30;
-    public static double COUNTS_TO_SLOW_DOWN = 1000;
-    public static double MIN_POSITION_VELOCITY = 150;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;
     private final DcMotorEx frontLeft;
@@ -28,6 +26,8 @@ public class BasicHolonomicDrivetrain {
     protected double strafe;
     protected double turn;
     protected int countsAffectedByTurn;
+    protected double countsToSlowDown;
+    protected double minPositionVelocity;
 
     protected DriveState currentDriveState;
     public enum DriveState {
@@ -55,6 +55,8 @@ public class BasicHolonomicDrivetrain {
         frontRight.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.BRAKE);
 
         currentDriveState = DriveState.STOPPED;
+        countsToSlowDown = 1000;
+        minPositionVelocity = 150;
     }
 
     // Behavior: Sets the velocity of the drive motors to the given velocities.
@@ -110,6 +112,8 @@ public class BasicHolonomicDrivetrain {
         setVelocity(bl, br, fl, fr);
     }
 
+    // TODO: The stopped behavior here is a little weird, because it just sets a position drive, but then
+    //       the position drive sets it to stopped kinda? I'd check this out and maybe clean it up.
     // Behavior: Drives the robot based on the current state and velocities. This should be called
     //           every loop. The possible states are STOPPED, which sets the velocity to 0,
     //           VELOCITY_DRIVE, which drives based on the current strafe, forward, and turn velocities,
@@ -147,8 +151,8 @@ public class BasicHolonomicDrivetrain {
 
                 double countsLeft = getPositionDriveDistanceLeft();
                 double velocity = forward;
-                if (countsLeft < COUNTS_TO_SLOW_DOWN) {
-                    velocity = MIN_POSITION_VELOCITY + (forward - MIN_POSITION_VELOCITY) * (countsLeft / COUNTS_TO_SLOW_DOWN);
+                if (countsLeft < countsToSlowDown) {
+                    velocity = minPositionVelocity + Math.max((forward - minPositionVelocity) * (countsLeft / countsToSlowDown), 0);
                 }
 
                 setVelocity(velocity * backLeftDif, velocity * backRightDif,
@@ -376,5 +380,21 @@ public class BasicHolonomicDrivetrain {
 
     public int getFrontRightPosition() {
         return frontRight.getCurrentPosition();
+    }
+
+    public void setCountsToSlowDown(double newCountsToSlowDown) {
+        countsToSlowDown = newCountsToSlowDown;
+    }
+
+    public double getCountsToSlowDown() {
+        return countsToSlowDown;
+    }
+
+    public void setMinPositionVelocity(double newMinPositionVelocity) {
+        minPositionVelocity = newMinPositionVelocity;
+    }
+
+    public double getMinPositionVelocity() {
+        return minPositionVelocity;
     }
 }

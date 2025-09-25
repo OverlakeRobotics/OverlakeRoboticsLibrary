@@ -48,9 +48,8 @@ public class AutoAimTest extends OpMode {
     public double velocity = 2000;
 
     private OdometryHolonomicDrivetrain driveTrain;
-    private static final ElapsedTime runtime = new ElapsedTime();
 
-    private static final int targetID = 20;
+    public static final int targetID = 20;
 
     private boolean autoLock = false;
 
@@ -71,10 +70,7 @@ public class AutoAimTest extends OpMode {
                 new GoBildaPinpointOdometry(pinpointDriver)
         );
         driveTrain.setPosition(startPos);
-
-        runtime.reset();
-
-        BasicHolonomicDrivetrain.COUNTS_TO_SLOW_DOWN = 500;
+        driveTrain.setCountsToSlowDown(500);
     }
 
     @Override
