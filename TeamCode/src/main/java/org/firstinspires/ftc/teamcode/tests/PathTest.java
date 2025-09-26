@@ -60,10 +60,10 @@ public class PathTest extends OpMode {
         velocity = (int) (PathServer.getVelocity() * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH);
         tolerance = PathServer.getTolerance();
         positions = PathServer.getPath();
-        // Doesn't use tags yet, but can be implemented in the future for specific commands
+        // This program doesn't use tags yet, but they can be implemented in the future for specific commands
         driveTrain.setPosition(positions[0]);
         positions = Arrays.copyOfRange(positions, 1, positions.length);
-        driveTrain.setPositionDrive(positions, velocity);
+        driveTrain.setPositionDrive(positions, velocity, tolerance);
     }
 
     @Override
