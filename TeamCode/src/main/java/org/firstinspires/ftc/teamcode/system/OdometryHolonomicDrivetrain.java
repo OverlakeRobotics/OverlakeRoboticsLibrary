@@ -251,4 +251,10 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
             (p1.getY(DistanceUnit.INCH) - p2.getY(DistanceUnit.INCH))
         );
     }
+
+    // Behavior: Returns the current point if path driving, otherwise -1.
+    // Returns: The index of the current point in the path, or -1 if not path driving.
+    public int getCurrentPoint() {
+        return currentPoint;
+    }
 }

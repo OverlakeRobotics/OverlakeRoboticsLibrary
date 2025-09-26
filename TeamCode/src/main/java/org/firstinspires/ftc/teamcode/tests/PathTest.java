@@ -9,6 +9,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.IMU;
+import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -39,6 +40,11 @@ public class PathTest extends OpMode {
     private OdometryHolonomicDrivetrain driveTrain;
 
     public Pose2D[] positions;
+    public PathServer.Tag[] tags;
+    private int lastTagIndex = 0;
+    private ElapsedTime runtime = new ElapsedTime();
+    private double lastTime = 0;
+    private double pauseTimeLeft = 0;
 
     @Override
     public void init() {
@@ -60,6 +66,8 @@ public class PathTest extends OpMode {
         velocity = (int) (PathServer.getVelocity() * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH);
         tolerance = PathServer.getTolerance();
         positions = PathServer.getPath();
+        tags = PathServer.getTags();
+        Arrays.sort(tags);
         // This program doesn't use tags yet, but they can be implemented in the future for specific commands
         driveTrain.setPosition(positions[0]);
         positions = Arrays.copyOfRange(positions, 1, positions.length);
@@ -70,7 +78,30 @@ public class PathTest extends OpMode {
     public void loop() {
         driveTrain.updatePosition();
         PathServer.setRobotPose(driveTrain.getPosition());
-        driveTrain.drive();
+        if (pauseTimeLeft <= 0) {
+            // Usual routine, driving
+            driveTrain.drive();
+            int nextPointIndex = driveTrain.getCurrentPoint();
+            while (tags[lastTagIndex].index <= nextPointIndex - 1) {
+                PathServer.Tag currTag = tags[lastTagIndex];
+                if (currTag.name.equals("velocity")) {
+                    driveTrain.setVelocity((int) (currTag.value * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
+                } else if (currTag.name.equals("pause")) {
+                    pauseTimeLeft += currTag.value;
+                    positions = Arrays.copyOfRange(positions, nextPointIndex, positions.length);
+                    driveTrain.stop();
+                }
+                lastTagIndex++;
+            }
+        } else {
+            // Stopped for a pause
+            pauseTimeLeft -= runtime.seconds() - lastTime;
+            if (pauseTimeLeft <= 0) {
+                pauseTimeLeft = 0;
+                driveTrain.setPositionDrive(positions, velocity, tolerance);
+            }
+        }
+        lastTime = runtime.seconds();
     }
 
     @Override

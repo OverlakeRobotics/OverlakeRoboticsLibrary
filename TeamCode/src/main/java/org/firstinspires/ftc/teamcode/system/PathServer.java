@@ -30,9 +30,13 @@ public class PathServer extends NanoHTTPD {
     private static volatile long   ROBOT_TS_MS = 0L;
 
     // Tags (from prior answer)
-    public static class Tag {
+    public static class Tag implements Comparable<Tag> {
         public final int index; public final String name; public final int value;
         public Tag(String name, int value, int index){ this.name=name; this.value=value; this.index=index; }
+
+        public int compareTo(Tag other) {
+            return this.index - other.index;
+        }
     }
     private static Tag[] TAGS = new Tag[0];
 

@@ -310,6 +310,13 @@ public class BasicHolonomicDrivetrain {
         currentDriveState = driveState;
     }
 
+    // Behavior: Sets the velocity of the robot
+    // Parameters:
+    //      - int velocity: The velocity to set the robot to, in counts/second.
+    public void setVelocity(int velocity) {
+        forward = velocity;
+    }
+
     // Behavior: Returns whether the robot is currently driving
     // Returns: A boolean that is true if the robot is currently driving, false otherwise.
     public boolean isDriving() {
