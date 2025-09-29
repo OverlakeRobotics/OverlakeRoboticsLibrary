@@ -126,7 +126,7 @@ public class PathTest extends OpMode {
                 autoAlignIndex = -1;
             }
 
-            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex - 1) {
+            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
                 PathServer.Tag currTag = tags[lastTagIndex];
                 Log.d("Tag", currTag.name);
                 switch (currTag.name) {
