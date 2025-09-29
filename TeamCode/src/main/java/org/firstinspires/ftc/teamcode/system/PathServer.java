@@ -74,7 +74,7 @@ public class PathServer extends NanoHTTPD {
     public static Pose2D[] getPath() {
         Pose2D[] poses = new Pose2D[RAW_POINTS.length - 1];
         for (int i = 1; i < RAW_POINTS.length; i++) {
-            poses[i] = new Pose2D(
+            poses[i - 1] = new Pose2D(
                     DistanceUnit.INCH,
                     RAW_POINTS[i][0],
                     RAW_POINTS[i][1],

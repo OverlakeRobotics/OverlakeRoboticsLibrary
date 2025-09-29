@@ -119,15 +119,16 @@ public class PathTest extends OpMode {
             driveTrain.drive();
             int nextPointIndex = driveTrain.getCurrentPointIndex();
 
-            if (nextPointIndex == autoAlignIndex) {
+            if (nextPointIndex == autoAlignIndex && nextPointIndex != -1) {
                 Pose2D curTarget = positions[nextPointIndex];
                 positions[nextPointIndex] = new Pose2D(DistanceUnit.INCH, curTarget.getX(DistanceUnit.INCH), curTarget.getY(DistanceUnit.INCH), AngleUnit.DEGREES, getAutoAlignAngle());
             } else {
                 autoAlignIndex = -1;
             }
 
-            while (tags[lastTagIndex].index <= nextPointIndex - 1) {
+            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex - 1) {
                 PathServer.Tag currTag = tags[lastTagIndex];
+                Log.d("Tag", currTag.name);
                 switch (currTag.name) {
                     case "velocity":
                         driveTrain.setVelocity((int) (currTag.value * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
