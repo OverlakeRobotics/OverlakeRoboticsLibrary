@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.components.IMUOdometry;
 import org.firstinspires.ftc.teamcode.components.SparkFunOTOSOdometry;
 import org.firstinspires.ftc.teamcode.drivers.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
+import org.firstinspires.ftc.teamcode.system.Intake;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 import org.firstinspires.ftc.teamcode.system.PathServer;
 
@@ -45,6 +46,7 @@ public class PathTest extends OpMode {
 
     private OdometryHolonomicDrivetrain driveTrain;
     private Limelight3A limelight;
+    private Intake intake;
 
     public Pose2D[] positions;
     public PathServer.Tag[] tags;
@@ -74,6 +76,7 @@ public class PathTest extends OpMode {
                 hardwareMap.get(DcMotorEx.class, "frontRight"),
                 new GoBildaPinpointOdometry(pinpointDriver)
         );
+        intake = new Intake(hardwareMap.get(DcMotorEx.class, "intakeMotor"));
 
         PathServer.startServer();
     }
@@ -133,6 +136,13 @@ public class PathTest extends OpMode {
                         pauseTimeLeft += currTag.value;
                         positions = Arrays.copyOfRange(positions, nextPointIndex, positions.length);
                         driveTrain.stop();
+                        break;
+                    case "intake":
+                        if (currTag.value <= 0) {
+                            intake.stop();
+                        } else {
+                            intake.setVelocity(currTag.value);
+                        }
                         break;
                     case "autoAlignRed": {
                         autoAlignIndex = nextPointIndex;
