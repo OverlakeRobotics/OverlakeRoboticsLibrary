@@ -39,7 +39,7 @@ public class Intake {
     }
 
     public void setVelocity(double velocity) {
-        if (velocity < 0) {
+        if (velocity == 0) {
             stop();
         } else {
             currentVelocity = Math.min(velocity, MAX_VELOCITY);

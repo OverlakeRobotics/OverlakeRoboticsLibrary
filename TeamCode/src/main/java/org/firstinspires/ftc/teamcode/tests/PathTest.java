@@ -126,7 +126,7 @@ public class PathTest extends OpMode {
                 autoAlignIndex = -1;
             }
 
-            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex - 1) {
+            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
                 PathServer.Tag currTag = tags[lastTagIndex];
                 Log.d("Tag", currTag.name);
                 switch (currTag.name) {
@@ -139,11 +139,7 @@ public class PathTest extends OpMode {
                         driveTrain.stop();
                         break;
                     case "intake":
-                        if (currTag.value <= 0) {
-                            intake.stop();
-                        } else {
-                            intake.setVelocity(currTag.value);
-                        }
+                        intake.setVelocity(currTag.value);
                         break;
                     case "autoAlignRed": {
                         autoAlignIndex = nextPointIndex;
