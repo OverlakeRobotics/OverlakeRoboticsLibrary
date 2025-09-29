@@ -142,7 +142,7 @@ public class PathTest extends OpMode {
                         positions[nextPointIndex] = new Pose2D(DistanceUnit.INCH, curTarget.getX(DistanceUnit.INCH), curTarget.getY(DistanceUnit.INCH), AngleUnit.DEGREES, getAutoAlignAngle());
                         break;
                     }
-                    case "AutoAlignBlue": {
+                    case "autoAlignBlue": {
                         autoAlignIndex = nextPointIndex;
                         targetAprilID = 20;
                         goalY = -54;
