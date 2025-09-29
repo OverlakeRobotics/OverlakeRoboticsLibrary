@@ -18,25 +18,29 @@ import java.util.Map;
 public class PathServer extends NanoHTTPD {
     private static final int PORT = 8099;
 
-    // Path data (same as before)
+    // ---- Path data (start + points) ----
+    // RAW_POINTS[0] is always the START pose [x,y,h]. The rest are user points.
     public static double[][] RAW_POINTS = {{0, 0, 0}};
-    public static double VELOCITY_IN_S = 0.0;
-    public static double TOLERANCE_IN = 0.0;
+    public static double     VELOCITY_IN_S = 0.0;
+    public static double     TOLERANCE_IN  = 0.0;
 
-    // ---- Realtime robot pose ----
-    private static volatile double ROBOT_X_IN = 0.0;
-    private static volatile double ROBOT_Y_IN = 0.0;
+    // ---- Realtime robot pose (for webapp polling) ----
+    private static volatile double ROBOT_X_IN  = 0.0;
+    private static volatile double ROBOT_Y_IN  = 0.0;
     private static volatile double ROBOT_H_DEG = 0.0;
     private static volatile long   ROBOT_TS_MS = 0L;
 
-    // Tags (from prior answer)
+    // ---- Tags ----
     public static class Tag implements Comparable<Tag> {
-        public final int index; public final String name; public final int value;
-        public Tag(String name, int value, int index){ this.name=name; this.value=value; this.index=index; }
-
-        public int compareTo(Tag other) {
-            return this.index - other.index;
+        public final int index;
+        public final String name;
+        public final int value;
+        public Tag(String name, int value, int index) {
+            this.name = name;
+            this.value = value;
+            this.index = index;
         }
+        @Override public int compareTo(Tag other) { return this.index - other.index; }
     }
     private static Tag[] TAGS = new Tag[0];
 
@@ -47,7 +51,7 @@ public class PathServer extends NanoHTTPD {
         start(SOCKET_READ_TIMEOUT, false);
     }
 
-    // --- Public API: server lifecycle ---
+    // ---- Server lifecycle ----
     public static void startServer() {
         if (instance == null) {
             try {
@@ -66,45 +70,79 @@ public class PathServer extends NanoHTTPD {
         }
     }
 
-    // --- Public API: consumers in robot code ---
+    // ---- Public API for robot code ----
     public static Pose2D[] getPath() {
-        Pose2D[] poses = new Pose2D[RAW_POINTS.length];
-        for (int i = 0; i < RAW_POINTS.length; i++) {
-            poses[i] = new Pose2D(DistanceUnit.INCH, RAW_POINTS[i][0], RAW_POINTS[i][1], AngleUnit.DEGREES, RAW_POINTS[i][2]);
+        Pose2D[] poses = new Pose2D[RAW_POINTS.length - 1];
+        for (int i = 1; i < RAW_POINTS.length; i++) {
+            poses[i] = new Pose2D(
+                    DistanceUnit.INCH,
+                    RAW_POINTS[i][0],
+                    RAW_POINTS[i][1],
+                    AngleUnit.DEGREES,
+                    RAW_POINTS[i][2]
+            );
         }
         return poses;
     }
+
+    /** Returns just the start pose (index 0). */
+    public static Pose2D getStartPose() {
+        if (RAW_POINTS == null || RAW_POINTS.length == 0) {
+            return new Pose2D(DistanceUnit.INCH, 0, 0, AngleUnit.DEGREES, 0);
+        }
+        double[] s = RAW_POINTS[0];
+        return new Pose2D(DistanceUnit.INCH, s[0], s[1], AngleUnit.DEGREES, s[2]);
+    }
+
+    /** Optional raw access if you need numbers directly. */
+    public static double[] getStartAsArray() {
+        if (RAW_POINTS == null || RAW_POINTS.length == 0) return new double[]{0,0,0};
+        return new double[]{ RAW_POINTS[0][0], RAW_POINTS[0][1], RAW_POINTS[0][2] };
+    }
+
     public static double getVelocity() { return VELOCITY_IN_S; }
     public static double getTolerance(){ return TOLERANCE_IN; }
-    public static Tag[]  getTags()     { Tag[] copy = new Tag[TAGS.length]; System.arraycopy(TAGS,0,copy,0,TAGS.length); return copy; }
+    public static Tag[]  getTags() {
+        Tag[] copy = new Tag[TAGS.length];
+        System.arraycopy(TAGS, 0, copy, 0, TAGS.length);
+        return copy;
+    }
 
     public static void setRobotPose(Pose2D pose) {
-        ROBOT_X_IN = pose.getX(DistanceUnit.INCH);
-        ROBOT_Y_IN = pose.getY(DistanceUnit.INCH);
+        ROBOT_X_IN  = pose.getX(DistanceUnit.INCH);
+        ROBOT_Y_IN  = pose.getY(DistanceUnit.INCH);
         ROBOT_H_DEG = pose.getHeading(AngleUnit.DEGREES);
         ROBOT_TS_MS = System.currentTimeMillis();
     }
 
-    // --- HTTP handling ---
+    // ---- HTTP handling ----
     @Override
     public Response serve(IHTTPSession session) {
         try {
             // CORS preflight
             if (Method.OPTIONS.equals(session.getMethod())) return preflightResponse();
 
-            // Upload path & params (same endpoint, now accepts object or legacy array)
-            if (Method.POST.equals(session.getMethod()) && "/points".equals(session.getUri())) {
-                Map<String,String> files = new HashMap<>();
+            final String uri = session.getUri();
+            final Method method = session.getMethod();
+
+            // Upload path & params (accepts the new object format and legacy array)
+            if (Method.POST.equals(method) && "/points".equals(uri)) {
+                Map<String, String> files = new HashMap<>();
                 session.parseBody(files);
                 String body = String.valueOf(files.get("postData"));
                 if (body == null) body = "";
                 body = body.trim();
 
-                if (body.startsWith("{"))      applyObjectPayload(new JSONObject(body));
-                else if (body.startsWith("[")) applyLegacyArrayPayload(new JSONArray(body));
-                else throw new IllegalArgumentException("Unsupported body format");
+                if (body.startsWith("{")) {
+                    applyObjectPayload(new JSONObject(body));       // NEW format
+                } else if (body.startsWith("[")) {
+                    applyLegacyArrayPayload(new JSONArray(body));   // Legacy array of [x,y,h]
+                } else {
+                    throw new IllegalArgumentException("Unsupported body format");
+                }
 
-                FtcDashboard.getInstance().updateConfig();
+                // Push latest to Dashboard config view (optional)
+                try { FtcDashboard.getInstance().updateConfig(); } catch (Throwable ignored) {}
 
                 JSONObject ok = new JSONObject()
                         .put("ok", true)
@@ -115,14 +153,35 @@ public class PathServer extends NanoHTTPD {
                 return withCors(newFixedLengthResponse(Response.Status.OK, "application/json", ok.toString()));
             }
 
-            // NEW: live pose for the webapp to poll
-            if (Method.GET.equals(session.getMethod()) && "/pose".equals(session.getUri())) {
+            // Live robot pose for polling from the webapp
+            if (Method.GET.equals(method) && "/pose".equals(uri)) {
                 JSONObject out = new JSONObject()
                         .put("ok", true)
                         .put("x", ROBOT_X_IN)
                         .put("y", ROBOT_Y_IN)
                         .put("h", ROBOT_H_DEG)   // degrees
                         .put("t", ROBOT_TS_MS);  // epoch ms
+                return withCors(newFixedLengthResponse(Response.Status.OK, "application/json", out.toString()));
+            }
+
+            // NEW: Start pose as a lightweight GET endpoint
+            if (Method.GET.equals(method) && "/start".equals(uri)) {
+                double[] s = getStartAsArray();
+                JSONObject out = new JSONObject()
+                        .put("ok", true)
+                        .put("x", s[0])
+                        .put("y", s[1])
+                        .put("h", s[2]);
+                return withCors(newFixedLengthResponse(Response.Status.OK, "application/json", out.toString()));
+            }
+
+            // Optional: quick peek at config (velocity/tolerance/tags)
+            if (Method.GET.equals(method) && "/config".equals(uri)) {
+                JSONObject out = new JSONObject()
+                        .put("ok", true)
+                        .put("velocity", VELOCITY_IN_S)
+                        .put("tolerance", TOLERANCE_IN)
+                        .put("tags", toJson(TAGS));
                 return withCors(newFixedLengthResponse(Response.Status.OK, "application/json", out.toString()));
             }
 
@@ -133,52 +192,84 @@ public class PathServer extends NanoHTTPD {
         }
     }
 
-    // --- Parsers for new & legacy upload ---
+    // ---- Parsers for new & legacy upload ----
     private static void applyObjectPayload(JSONObject obj) throws JSONException {
+        // start: [x, y, h]
         JSONArray start = obj.optJSONArray("start");
-        double sx = (start!=null && start.length()>=3) ? start.optDouble(0,0.0) : 0.0;
-        double sy = (start!=null && start.length()>=3) ? start.optDouble(1,0.0) : 0.0;
-        double sh = (start!=null && start.length()>=3) ? start.optDouble(2,0.0) : 0.0;
+        double sx = 0.0, sy = 0.0, sh = 0.0;
+        if (start != null) {
+            sx = start.optDouble(0, 0.0);
+            sy = start.optDouble(1, 0.0);
+            sh = start.optDouble(2, 0.0);
+        }
 
+        // points: [[x,y,h], ...]
         JSONArray ptsArr = obj.optJSONArray("points");
-        int n = ptsArr!=null ? ptsArr.length() : 0;
-        double[][] pts = new double[n+1][3];
-        pts[0][0]=sx; pts[0][1]=sy; pts[0][2]=sh;
-        for (int i=0;i<n;i++){
+        int n = (ptsArr != null) ? ptsArr.length() : 0;
+
+        // RAW_POINTS = [ start, ...points ]
+        double[][] pts = new double[n + 1][3];
+        pts[0][0] = sx; pts[0][1] = sy; pts[0][2] = sh;
+
+        for (int i = 0; i < n; i++) {
             JSONArray p = ptsArr.getJSONArray(i);
-            pts[i+1][0]=p.getDouble(0);
-            pts[i+1][1]=p.getDouble(1);
-            pts[i+1][2]=p.getDouble(2);
+            // robust to missing heading slot
+            double px = p.optDouble(0, 0.0);
+            double py = p.optDouble(1, 0.0);
+            double ph = (p.length() >= 3) ? p.optDouble(2, 0.0) : 0.0;
+            pts[i + 1][0] = px;
+            pts[i + 1][1] = py;
+            pts[i + 1][2] = ph;
         }
         RAW_POINTS = pts;
 
         VELOCITY_IN_S = obj.optDouble("velocity", VELOCITY_IN_S);
         TOLERANCE_IN  = obj.optDouble("tolerance", TOLERANCE_IN);
 
+        // tags: [{index, name, value}, ...]
         JSONArray tagsArr = obj.optJSONArray("tags");
-        if (tagsArr!=null){
+        if (tagsArr != null) {
             Tag[] out = new Tag[tagsArr.length()];
-            for (int i=0;i<tagsArr.length();i++){
+            for (int i = 0; i < tagsArr.length(); i++) {
                 JSONObject t = tagsArr.getJSONObject(i);
-                out[i] = new Tag(t.optString("name",""), t.optInt("value",0), t.optInt("index",0));
+                out[i] = new Tag(
+                        t.optString("name", ""),
+                        t.optInt("value", 0),
+                        t.optInt("index", 0)
+                );
             }
             TAGS = out;
-        }else{
+        } else {
             TAGS = new Tag[0];
         }
     }
+
     private static void applyLegacyArrayPayload(JSONArray arr) throws JSONException {
+        // Legacy: entire array is the path (no separate start). Keep as-is.
         double[][] pts = new double[arr.length()][3];
-        for (int i=0;i<arr.length();i++){
+        for (int i = 0; i < arr.length(); i++) {
             JSONArray p = arr.getJSONArray(i);
-            pts[i][0]=p.getDouble(0);
-            pts[i][1]=p.getDouble(1);
-            pts[i][2]=p.getDouble(2);
+            pts[i][0] = p.getDouble(0);
+            pts[i][1] = p.getDouble(1);
+            pts[i][2] = p.getDouble(2);
         }
         RAW_POINTS = pts;
     }
 
-    // --- CORS helpers ---
+    // ---- Helpers ----
+    private static JSONArray toJson(Tag[] tags) throws JSONException {
+        JSONArray arr = new JSONArray();
+        for (Tag t : tags) {
+            JSONObject o = new JSONObject()
+                    .put("index", t.index)
+                    .put("name", t.name)
+                    .put("value", t.value);
+            arr.put(o);
+        }
+        return arr;
+    }
+
+    // ---- CORS helpers ----
     private Response preflightResponse() {
         Response r = newFixedLengthResponse(Response.Status.NO_CONTENT, "text/plain", "");
         r.addHeader("Access-Control-Allow-Origin", "*");

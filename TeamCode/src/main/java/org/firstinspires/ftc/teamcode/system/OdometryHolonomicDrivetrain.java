@@ -252,9 +252,9 @@ public class OdometryHolonomicDrivetrain extends BasicHolonomicDrivetrain {
         );
     }
 
-    // Behavior: Returns the current point if path driving, otherwise -1.
+    // Behavior: Returns the index of the current point if path driving, otherwise -1.
     // Returns: The index of the current point in the path, or -1 if not path driving.
-    public int getCurrentPoint() {
+    public int getCurrentPointIndex() {
         return currentPoint;
     }
 }
