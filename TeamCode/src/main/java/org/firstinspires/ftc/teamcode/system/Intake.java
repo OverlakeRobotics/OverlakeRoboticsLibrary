@@ -13,9 +13,9 @@ public class Intake {
         RUNNING,
         STOPPED
     }
-    private static double MAX_VELOCITY = 2888;
+    private static final double MAX_VELOCITY = 2888;
     private double currentVelocity = 0;
-    private DcMotorEx intakeMotor;
+    private final DcMotorEx intakeMotor;
     private IntakeState currentState = IntakeState.STOPPED;
 
     public Intake(DcMotorEx intakeMotor) {
@@ -25,21 +25,19 @@ public class Intake {
     }
 
     private void setState(IntakeState newState) {
-        if (newState != currentState) {
-            switch (newState) {
-                case RUNNING:
-                    intakeMotor.setVelocity(currentVelocity);
-                    break;
-                case STOPPED:
-                    intakeMotor.setVelocity(0);
-                    break;
-            }
-            currentState = newState;
+        switch (newState) {
+            case RUNNING:
+                intakeMotor.setVelocity(currentVelocity);
+                break;
+            case STOPPED:
+                intakeMotor.setVelocity(0);
+                break;
         }
+        currentState = newState;
     }
 
     public void setVelocity(double velocity) {
-        if (velocity < 0) {
+        if (velocity == 0) {
             stop();
         } else {
             currentVelocity = Math.min(velocity, MAX_VELOCITY);

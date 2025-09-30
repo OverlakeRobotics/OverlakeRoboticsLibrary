@@ -60,6 +60,8 @@ public class PathTest extends OpMode {
     public double goalX = 60;
     public double goalY = 54;
 
+    public int addIndex = 0;
+
     @Override
     public void init() {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
@@ -117,7 +119,7 @@ public class PathTest extends OpMode {
         if (pauseTimeLeft <= 0) {
             // Usual routine, driving
             driveTrain.drive();
-            int nextPointIndex = driveTrain.getCurrentPointIndex();
+            int nextPointIndex = driveTrain.getNextPointIndex() + addIndex;
 
             if (nextPointIndex == autoAlignIndex && nextPointIndex != -1) {
                 Pose2D curTarget = positions[nextPointIndex];
@@ -128,7 +130,8 @@ public class PathTest extends OpMode {
 
             while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
                 PathServer.Tag currTag = tags[lastTagIndex];
-                Log.d("Tag", currTag.name);
+                Log.d("currentTag", currTag.name);
+                Log.d("currentTag", "Value: " + currTag.value);
                 switch (currTag.name) {
                     case "velocity":
                         driveTrain.setVelocity((int) (currTag.value * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
@@ -136,19 +139,16 @@ public class PathTest extends OpMode {
                     case "pause":
                         pauseTimeLeft += currTag.value;
                         positions = Arrays.copyOfRange(positions, nextPointIndex, positions.length);
+                        addIndex += nextPointIndex;
                         driveTrain.stop();
                         break;
                     case "intake":
-                        if (currTag.value <= 0) {
-                            intake.stop();
-                        } else {
-                            intake.setVelocity(currTag.value);
-                        }
+                        intake.setVelocity(currTag.value);
                         break;
                     case "autoAlignRed": {
                         autoAlignIndex = nextPointIndex;
                         targetAprilID = 23;
-                        goalY = 54;
+                        goalY = -54;
                         Pose2D curTarget = positions[nextPointIndex];
                         positions[nextPointIndex] = new Pose2D(DistanceUnit.INCH, curTarget.getX(DistanceUnit.INCH), curTarget.getY(DistanceUnit.INCH), AngleUnit.DEGREES, getAutoAlignAngle());
                         break;
@@ -156,7 +156,7 @@ public class PathTest extends OpMode {
                     case "autoAlignBlue": {
                         autoAlignIndex = nextPointIndex;
                         targetAprilID = 20;
-                        goalY = -54;
+                        goalY = 54;
                         Pose2D curTarget = positions[nextPointIndex];
                         positions[nextPointIndex] = new Pose2D(DistanceUnit.INCH, curTarget.getX(DistanceUnit.INCH), curTarget.getY(DistanceUnit.INCH), AngleUnit.DEGREES, getAutoAlignAngle());
                         break;
