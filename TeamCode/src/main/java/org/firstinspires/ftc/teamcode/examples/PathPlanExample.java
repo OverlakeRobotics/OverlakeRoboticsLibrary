@@ -31,7 +31,7 @@ public class PathPlanExample extends OpMode {
     private final ElapsedTime runtime = new ElapsedTime();
     private double lastTime = 0;
     private double pauseTimeLeft = 0;
-    public int addIndex = 0;
+    private int pausedIndex = -1;
 
     @Override
     public void init() {
@@ -49,14 +49,21 @@ public class PathPlanExample extends OpMode {
     }
 
     @Override
+    public void init_loop() {
+        driveTrain.updatePosition();
+        PathServer.setRobotPose(driveTrain.getPosition());
+    }
+
+    @Override
     public void start() {
         velocity = (int) (PathServer.getVelocity() * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH);
         tolerance = PathServer.getTolerance();
+        driveTrain.setTolerance(tolerance);
         positions = PathServer.getPath();
         driveTrain.setPosition(PathServer.getStartPose());
         tags = PathServer.getTags();
         Arrays.sort(tags);
-        driveTrain.setPositionDrive(positions, velocity, tolerance);
+        driveTrain.setPositionDrive(positions, velocity);
     }
 
 
@@ -65,13 +72,10 @@ public class PathPlanExample extends OpMode {
         driveTrain.updatePosition();
         PathServer.setRobotPose(driveTrain.getPosition());
         if (pauseTimeLeft <= 0) {
-            // Usual routine, driving
             driveTrain.drive();
             int nextPointIndex = driveTrain.getNextPointIndex();
 
-            int pauseIndexIncrement = 0;
-
-            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex + addIndex) {
+            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
                 PathServer.Tag currTag = tags[lastTagIndex];
                 switch (currTag.name) {
                     case "velocity":
@@ -79,21 +83,17 @@ public class PathPlanExample extends OpMode {
                         break;
                     case "pause":
                         pauseTimeLeft += currTag.value;
-                        positions = Arrays.copyOfRange(positions, nextPointIndex, positions.length);
-                        pauseIndexIncrement = nextPointIndex;
-                        driveTrain.stop();
+                        pausedIndex = nextPointIndex;
+                        driveTrain.setPositionDrive(positions[nextPointIndex - 1], velocity);
                         break;
                 }
                 lastTagIndex++;
             }
-
-            addIndex += pauseIndexIncrement;
         } else {
-            // Stopped for a pause
             pauseTimeLeft -= runtime.seconds() - lastTime;
             if (pauseTimeLeft <= 0) {
                 pauseTimeLeft = 0;
-                driveTrain.setPositionDrive(positions, velocity, tolerance);
+                driveTrain.setPositionDrive(positions, velocity, pausedIndex);
             }
         }
         lastTime = runtime.seconds();
