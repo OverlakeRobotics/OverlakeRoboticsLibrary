@@ -37,7 +37,7 @@ public class OdometryTeleOpExample extends OpMode {
     };
 
     public int currentPreset = -1;
-    public double velocity = 2000;
+    public double velocity = 2800;
     private OdometryHolonomicDrivetrain driveTrain;
     private boolean autoLock = false;
 
