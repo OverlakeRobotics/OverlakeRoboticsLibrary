@@ -3,8 +3,8 @@
 package org.firstinspires.ftc.teamcode.components;
 
 
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.drivers.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.system.OdometryModule;
 
 public class GoBildaPinpointOdometry implements OdometryModule {

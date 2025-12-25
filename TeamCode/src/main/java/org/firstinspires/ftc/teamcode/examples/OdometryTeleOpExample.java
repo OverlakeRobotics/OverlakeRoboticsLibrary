@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.examples;
 
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -10,21 +11,22 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
-import org.firstinspires.ftc.teamcode.drivers.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 
 
 @Config
 @TeleOp(name = "Odometry TeleOp Example", group = "TeleOp")
 public class OdometryTeleOpExample extends OpMode {
-    public double yOffset = -168.0; // mm
-    public double xOffset = -84.0; // mm
+    public double yOffset = -168.0;
+    public double xOffset = -84.0;
 
     public double autoLockX = 60;
     public double autoLockY = 54;
 
     // Positive angle is to the left, positive x is forward, and positive y is left
     // This is the center of the bot when the program is initialized
+    // In real TeleOps, you will likely not set the position of the bot, and instead only set
+    // the position at the start of the autonomous period.
     public Pose2D startPos = new Pose2D(DistanceUnit.INCH, -63, 15, AngleUnit.DEGREES, 0);
 
     // List of preset positions the driver can press a button to start driving to
@@ -41,7 +43,7 @@ public class OdometryTeleOpExample extends OpMode {
     @Override
     public void init() {
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset);
+        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
@@ -51,7 +53,6 @@ public class OdometryTeleOpExample extends OpMode {
         );
 
         driveTrain.setPosition(startPos);
-        driveTrain.setCountsToSlowDown(500);
     }
 
     @Override

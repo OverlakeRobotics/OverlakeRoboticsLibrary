@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.examples;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -9,7 +10,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
-import org.firstinspires.ftc.teamcode.drivers.GoBildaPinpointDriver;
 import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
 
 @Config
@@ -35,7 +35,7 @@ public class OdometryAutonExample extends OpMode {
     @Override
     public void init() {
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset);
+        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
         driveTrain = new OdometryHolonomicDrivetrain(
                 hardwareMap.get(DcMotorEx.class, "backLeft"),
                 hardwareMap.get(DcMotorEx.class, "backRight"),
@@ -46,9 +46,9 @@ public class OdometryAutonExample extends OpMode {
     }
 
     // This OpMode manually sets the target position of the drive train to the next point after
-    // the robot reaches the current target point. This applies slowdown to each point and is mainly
-    // used to demonstrate some more of the driveTrain class's capabilities. Practically, you will normally
-    // use driveTrain.setPositionDrive(Pose2D[] path, velocity, tolerance) in start() and then just
+    // the robot reaches the current target point. This d is mainly used to demonstrate some more
+    // of the driveTrain class's capabilities. Practically, you will normally use
+    // driveTrain.setPositionDrive(Pose2D[] path, velocity, tolerance) in start() and then just
     // call driveTrain.updatePosition() and driveTrain.drive() in loop().
     @Override
     public void loop() {

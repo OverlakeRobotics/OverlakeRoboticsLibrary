@@ -18,6 +18,24 @@ public interface OdometryModule {
     //      - Pose2D position: The position to set the odometry sensor to.
     void setPosition(Pose2D position);
 
+    // Behavior: Gets the velocity of the bot in the x direction.
+    // Returns: The velocity of the bot in the x direction.
+    default double getXVelocity() {
+        throw new UnsupportedOperationException("X velocity not supported");
+    }
+
+    // Behavior: Gets the velocity of the bot in the y direction.
+    // Returns: The velocity of the bot in the y direction.
+    default double getYVelocity() {
+        throw new UnsupportedOperationException("Y velocity not supported");
+    }
+
+    // Behavior: Gets the angular velocity of the bot.
+    // Returns: The angular velocity of the bot in radians/s.
+    default double getAngularVelocity() {
+        throw new UnsupportedOperationException("Angular velocity not supported");
+    }
+
     // Behavior: Sets the priority level for the position reading of the odometry sensor. This is
     //           used to determine which sensors readings to use when using multiple odometry
     //           sensors to determine the robots position. A higher priority means it will be
