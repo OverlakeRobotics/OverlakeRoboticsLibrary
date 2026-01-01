@@ -1,12 +1,17 @@
 package org.firstinspires.ftc.teamcode.examples;
 
+
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
 import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
 
+
+// An example of a simple robot-centric TeleOp.
+@Disabled
 @Config
 @TeleOp(name = "TeleOp Example", group = "TeleOp")
 public class TeleOpExample extends OpMode {
