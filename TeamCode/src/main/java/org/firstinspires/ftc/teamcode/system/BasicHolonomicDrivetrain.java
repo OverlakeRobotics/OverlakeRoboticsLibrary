@@ -54,17 +54,28 @@ public class BasicHolonomicDrivetrain {
         currentDriveState = DriveState.STOPPED;
     }
 
-    // Behavior: Sets the PIDF coefficients for the drivetrain motors.
+    // Behavior: Sets the velocity PIDF coefficients for the drivetrain motors.
     // Parameters:
     //      - double p: The proportional term.
     //      - double i: The integral term.
     //      - double d: The derivative term.
-    //      - double f: The feedback term.
-    public void setPIDFCoefficients(double p, double i, double d, double f) {
+    //      - double f: The feedforward term.
+    public void setVelocityPIDFCoefficients(double p, double i, double d, double f) {
         backLeft.setVelocityPIDFCoefficients(p, i, d, f);
         backRight.setVelocityPIDFCoefficients(p, i, d, f);
         frontLeft.setVelocityPIDFCoefficients(p, i, d, f);
         frontRight.setVelocityPIDFCoefficients(p, i, d, f);
+    }
+
+    // Behavior: Sets the positional P coefficient for the drivetrain motors, which is only used
+    //           for autonomous movements.
+    // Parameters:
+    //      - double p: The proportional term.
+    public void setPositionP(double p) {
+        backLeft.setPositionPIDFCoefficients(p);
+        backRight.setPositionPIDFCoefficients(p);
+        frontLeft.setPositionPIDFCoefficients(p);
+        frontRight.setPositionPIDFCoefficients(p);
     }
 
     // Behavior: Sets the velocity of the drive motors to the given velocities.
