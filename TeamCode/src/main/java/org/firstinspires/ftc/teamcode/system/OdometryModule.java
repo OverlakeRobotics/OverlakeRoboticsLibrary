@@ -48,9 +48,9 @@ public interface OdometryModule {
 
     // Behavior: Sets the priority level for the position reading of the odometry sensor. This is
     //           used to determine which sensors readings to use when using multiple odometry
-    //           sensors to determine the robots position. A higher priority means it will be
-    //           used over other sensors with lower priority levels. With the same priority, it
-    //           takes whichever comes first.
+    //           sensors to determine the robots position. A lower priority number means it will
+    //           be used over sensors with higher priority numbers (priority 1 beats priority 2).
+    //           With the same priority, it takes whichever comes first.
     // Parameters:
     //      - int priority: The priority level of the odometry sensor.
     default void setPositionPriority(int priority) {
@@ -65,9 +65,9 @@ public interface OdometryModule {
 
     // Behavior: Sets the priority level for the heading reading of the odometry sensor. This is
     //           used to determine which sensors readings to use when using multiple odometry
-    //           sensors to determine the robots heading. A higher priority means it will be
-    //           used over other sensors with lower priority levels. With the same priority, it
-    //           takes whichever comes first.
+    //           sensors to determine the robots heading. A lower priority number means it will
+    //           be used over sensors with higher priority numbers (priority 1 beats priority 2).
+    //           With the same priority, it takes whichever comes first.
     // Parameters:
     //      - int priority: The priority level of the odometry sensor.
     default void setHeadingPriority(int priority) {

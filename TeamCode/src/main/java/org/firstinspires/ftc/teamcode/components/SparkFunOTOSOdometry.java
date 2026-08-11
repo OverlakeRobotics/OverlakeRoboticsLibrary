@@ -21,8 +21,8 @@ public class SparkFunOTOSOdometry implements OdometryModule {
     public SparkFunOTOSOdometry(SparkFunOTOS sparkFunSensor) {
         this.sparkFunSensor = sparkFunSensor;
 
-        positionPriority = 1;
-        headingPriority = 3;
+        positionPriority = 5;
+        headingPriority = 5;
         doPositionReset = true;
         doHeadingReset = false;
     }
