@@ -50,6 +50,16 @@ public class PathServer extends NanoHTTPD {
     }
 
     private static volatile Tag[] TAGS = new Tag[0];
+    private static volatile PathRoute route;
+    public static PathRoute getRoute() { return route; }
+    public static synchronized void clearRoute() {
+        route = null;
+        RAW_POINTS = new double[][]{{0, 0, 0}};
+        TAGS = new Tag[0];
+        ALLIANCE = "unknown";
+        VELOCITY_IN_S = 0;
+        TOLERANCE_IN = 0;
+    }
     private static volatile PathServer instance;
 
     // Starts the embedded HTTP server.
@@ -213,49 +223,25 @@ public class PathServer extends NanoHTTPD {
     }
 
     // Applies the uploaded JSON payload to RAW_POINTS/config fields.
-    private static void applyPayload(JSONObject obj) throws JSONException {
-        JSONArray start = obj.optJSONArray("start");
-        double sx = (start != null) ? start.optDouble(0, 0.0) : 0.0;
-        double sy = (start != null) ? start.optDouble(1, 0.0) : 0.0;
-        double sh = (start != null) ? start.optDouble(2, 0.0) : 0.0;
-
-        JSONArray ptsArr = obj.optJSONArray("points");
-        int n = (ptsArr != null) ? ptsArr.length() : 0;
-
-        double[][] pts = new double[n + 1][3];
-        pts[0][0] = sx; pts[0][1] = sy; pts[0][2] = sh;
-
-        for (int i = 0; i < n; i++) {
-            JSONArray p = ptsArr.getJSONArray(i);
-            pts[i + 1][0] = p.optDouble(0, 0.0);
-            pts[i + 1][1] = p.optDouble(1, 0.0);
-            pts[i + 1][2] = (p.length() >= 3) ? p.optDouble(2, 0.0) : 0.0;
+    private static synchronized void applyPayload(JSONObject obj) throws JSONException {
+        PathRoute parsed = PathRoute.fromJson(obj);
+        double[][] points = new double[parsed.points.size() + 1][3];
+        for (int i = 0; i < points.length; i++) {
+            Pose2D pose = i == 0 ? parsed.start : parsed.points.get(i - 1);
+            points[i] = new double[]{pose.getX(DistanceUnit.INCH), pose.getY(DistanceUnit.INCH),
+                    pose.getHeading(AngleUnit.DEGREES)};
         }
-        RAW_POINTS = pts;
-
-        VELOCITY_IN_S = obj.optDouble("velocity", VELOCITY_IN_S);
-        TOLERANCE_IN  = obj.optDouble("tolerance", TOLERANCE_IN);
-
-        String alliance = obj.optString("alliance", ALLIANCE);
-        if (alliance == null || alliance.trim().isEmpty()) alliance = "unknown";
-        ALLIANCE = alliance.trim().toLowerCase();
-
-        JSONArray tagsArr = obj.optJSONArray("tags");
-        if (tagsArr == null) {
-            TAGS = new Tag[0];
-            return;
+        Tag[] tags = new Tag[parsed.markers.size()];
+        for (int i = 0; i < tags.length; i++) {
+            PathRoute.Marker m = parsed.markers.get(i);
+            tags[i] = new Tag(m.name, m.value, m.index);
         }
-
-        Tag[] out = new Tag[tagsArr.length()];
-        for (int i = 0; i < tagsArr.length(); i++) {
-            JSONObject t = tagsArr.getJSONObject(i);
-            out[i] = new Tag(
-                    t.optString("name", ""),
-                    t.optDouble("value", 0.0),
-                    t.optInt("index", 0)
-            );
-        }
-        TAGS = out;
+        RAW_POINTS = points;
+        TAGS = tags;
+        ALLIANCE = parsed.alliance;
+        VELOCITY_IN_S = parsed.velocity;
+        TOLERANCE_IN = parsed.tolerance;
+        route = parsed;
     }
 
     // Converts the tag array into a JSON array for the /config endpoint.
