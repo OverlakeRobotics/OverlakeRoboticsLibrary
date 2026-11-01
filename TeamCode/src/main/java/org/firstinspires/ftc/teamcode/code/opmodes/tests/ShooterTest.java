@@ -11,7 +11,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 
 @Config
-@TeleOp(name="Shooter Test", group="TeleOp")
+@TeleOp(name="Shooter Test", group="Test")
 
 public class ShooterTest extends OpMode {
     private BasicHolonomicDrivetrain driveTrain;

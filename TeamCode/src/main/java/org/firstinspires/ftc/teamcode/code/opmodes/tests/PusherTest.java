@@ -7,7 +7,7 @@ import org.firstinspires.ftc.robotcore.external.Telemetry;
 
 import org.firstinspires.ftc.teamcode.code.parts.Pusher;
 
-@TeleOp(name = "Pusher Test", group = "TeleOp")
+@TeleOp(name = "Pusher Test", group = "Test")
 public class PusherTest extends OpMode {
     private Pusher pusher;
     public static double HOME_DEGREES = -100.0;

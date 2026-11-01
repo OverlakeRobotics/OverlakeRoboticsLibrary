@@ -52,4 +52,9 @@ public class Pusher {
     public void setPosition(double degrees) {
         servo.setPosition((degrees + 150.0) / 300.0);
     }
+
+    public void home() {
+        servo.setPosition((HOME_DEGREES + 150.0) / 300.0);
+        state = 0;
+    }
 }

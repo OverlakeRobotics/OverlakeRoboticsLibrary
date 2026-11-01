@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "createdAt": "2026-11-01T18:33:13.244Z",
+  "alliance": "red",
+  "start": {
+    "x": 63,
+    "y": 63,
+    "h": 0
+  },
+  "points": [
+    {
+      "x": 57,
+      "y": 48,
+      "h": 0
+    },
+    {
+      "x": 45,
+      "y": 63,
+      "h": 0
+    }
+  ],
+  "segments": [
+    {
+      "type": "line",
+      "end": {
+        "x": 57,
+        "y": 48,
+        "h": 0
+      },
+      "samples": [
+        {
+          "x": 57,
+          "y": 48,
+          "h": 0
+        }
+      ]
+    },
+    {
+      "type": "line",
+      "end": {
+        "x": 45,
+        "y": 63,
+        "h": 0
+      },
+      "samples": [
+        {
+          "x": 45,
+          "y": 63,
+          "h": 0
+        }
+      ]
+    }
+  ],
+  "headingMode": "straight",
+  "endHeading": 0,
+  "velocity": 50,
+  "maxAccel": 40,
+  "tolerance": 5,
+  "snapInches": 3,
+  "robot": {
+    "length": 18,
+    "width": 18
+  },
+  "tags": [
+    {
+      "index": 1,
+      "name": "reset",
+      "value": 0
+    },
+    {
+      "index": 2,
+      "name": "reset",
+      "value": 0
+    }
+  ],
+  "globals": [],
+  "tagBindings": []
+}

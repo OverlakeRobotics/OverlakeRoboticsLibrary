@@ -26,8 +26,8 @@ import org.firstinspires.ftc.teamcode.system.OdometryModule;
 @Autonomous(name = "Turn Counts Tuner", group = "Autonomous")
 public class TurnCountsTuner extends OpMode {
     // Change to your actual offsets. See GoBildaPinpointDriver.setOffsets() for details on measuring offsets.
-    public double yOffset = -168.0;
-    public double xOffset = -84.0;
+//    public double yOffset = -168.0;
+//    public double xOffset = -84.0;
 
     public static int velocity = 1000;
 
@@ -36,7 +36,7 @@ public class TurnCountsTuner extends OpMode {
 
     public double countsPerDegree;
 
-    public static int turnCounts = 40000;
+    public static int turnCounts = 3;
 
     private int revolutions = 0;
     private double lastHeading = 0;
@@ -45,7 +45,7 @@ public class TurnCountsTuner extends OpMode {
     @Override
     public void init() {
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
+        //pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
         odometry = new GoBildaPinpointOdometry(pinpointDriver);
         odometry.reset();
 

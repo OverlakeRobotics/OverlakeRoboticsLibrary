@@ -21,13 +21,13 @@ import org.firstinspires.ftc.teamcode.system.OdometryModule;
 // FORWARD_COUNTS_PER_INCH is located in the BasicHolonomicDrivetrain class and can be set there
 // after running this OpMode and getting the value. Before running this tuner class, make sure you
 // have the correct offsets for your x and y offsets for the pinpoint.
-@Disabled
+//@Disabled
 @Config
 @Autonomous(name = "Forward Counts Tuner", group = "Autonomous")
 public class ForwardCountsTuner extends OpMode {
     // Change to your actual offsets. See GoBildaPinpointDriver.setOffsets() for details on measuring offsets.
-    public double yOffset = -168.0;
-    public double xOffset = -84.0;
+//    public double yOffset = -168.0;
+//    public double xOffset = -84.0;
 
     public static int velocity = 1000;
 
@@ -36,13 +36,13 @@ public class ForwardCountsTuner extends OpMode {
 
     public double forwardCountsPerInch;
 
-    public static int driveDist = 2500;
+    public static int driveDist = 2000;
 
 
     @Override
     public void init() {
         GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
+        //pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
         odometry = new GoBildaPinpointOdometry(pinpointDriver);
         odometry.reset();
 

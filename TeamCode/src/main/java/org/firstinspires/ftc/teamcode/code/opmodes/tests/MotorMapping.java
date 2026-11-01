@@ -4,7 +4,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 
-@TeleOp(name = "Motor Mapping Test", group = "Tests")
+@TeleOp(name = "Motor Mapping Test", group = "Test")
 public class MotorMapping extends OpMode {
     private static final double TEST_POWER = 0.2;
 

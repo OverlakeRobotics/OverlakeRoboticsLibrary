@@ -10,7 +10,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 
 @Config
-@TeleOp(name="Intake Test", group="TeleOp")
+@TeleOp(name="Intake Test", group="Test")
 
 public class IntakeTest extends OpMode {
     private BasicHolonomicDrivetrain driveTrain;
