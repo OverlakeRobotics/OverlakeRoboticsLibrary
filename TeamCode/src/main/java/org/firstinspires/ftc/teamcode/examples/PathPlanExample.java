@@ -1,125 +1,40 @@
 package org.firstinspires.ftc.teamcode.examples;
 
 
-import com.acmerobotics.dashboard.config.Config;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.teamcode.components.GoBildaPinpointOdometry;
-import org.firstinspires.ftc.teamcode.system.BasicHolonomicDrivetrain;
-import org.firstinspires.ftc.teamcode.system.OdometryHolonomicDrivetrain;
-import org.firstinspires.ftc.teamcode.system.PathServer;
-
-import java.util.Arrays;
+import org.firstinspires.ftc.teamcode.system.PathPlanAuto;
 
 
 // This is an example OpMode designed to interface with the Overlake Robotics Path Planner.
-// It will let you use the path planner to upload a path to the robot with movement and two tags.
-// The two tags are:
-//      - velocity: Changes the velocity of the robot to the tags value (this is in in/s).
-//      - pause: Pauses the robot for a number of seconds equal to the tags value.
-// Feel free to take this OpMode and add your own robot specific tags if you are using the path planner.
+// It lets you upload a path from the planner to the robot and follows it with Pedro Pathing. Fill
+// in pedro/Constants.java for your robot first. Two tags are handled for you:
+//      - velocity: Caps the robot's speed. The value is a percent of max speed (100 = full speed).
+//      - pause: Stops the robot for a number of seconds equal to the tag's value.
+// Everything else your robot does goes in the list in tags() below. Copy this OpMode and replace
+// the list with your own tags.
 @Disabled
-@Config
 @Autonomous(name = "Path Planning Example", group = "Autonomous")
-public class PathPlanExample extends OpMode {
-    public double yOffset = -168.0;
-    public double xOffset = -84.0;
-
-    private OdometryHolonomicDrivetrain driveTrain;
-    public Pose2D[] positions;
-    public PathServer.Tag[] tags;
-    private int lastTagIndex = 0;
-    private final ElapsedTime runtime = new ElapsedTime();
-    private double lastTime = 0;
-    private double pauseTimeLeft = 0;
-    private int pausedIndex = -1;
+public class PathPlanExample extends PathPlanAuto {
+    private DcMotorEx intake;   // null when the robot has no "intake" motor
 
     @Override
-    public void init() {
-        GoBildaPinpointDriver pinpointDriver = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint");
-        pinpointDriver.setOffsets(xOffset, yOffset, DistanceUnit.MM);
-        driveTrain = new OdometryHolonomicDrivetrain(
-                hardwareMap.get(DcMotorEx.class, "backLeft"),
-                hardwareMap.get(DcMotorEx.class, "backRight"),
-                hardwareMap.get(DcMotorEx.class, "frontLeft"),
-                hardwareMap.get(DcMotorEx.class, "frontRight"),
-                new GoBildaPinpointOdometry(pinpointDriver)
-        );
-
-        PathServer.startServer();
+    protected void setup() {
+        intake = hardwareMap.tryGet(DcMotorEx.class, "intake");
+        if (intake != null) intake.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     @Override
-    public void init_loop() {
-        driveTrain.updatePosition();
-        PathServer.setRobotPose(driveTrain.getPosition());
+    protected void tags() {
+        // Runs the intake at the tag's value in ticks/s (0 stops it). The robot keeps driving.
+        if (intake != null) tag("intake", velocity -> intake.setVelocity(velocity));
     }
 
     @Override
-    public void start() {
-        driveTrain.setVelocity((int) (PathServer.getVelocity() * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
-        positions = PathServer.getPath();
-        driveTrain.setPosition(PathServer.getStartPose());
-        driveTrain.setTolerance(PathServer.getTolerance());
-
-        tags = PathServer.getTags();
-        Arrays.sort(tags);
-
-        driveTrain.setPositionDrive(positions);
-    }
-
-
-    @Override
-    public void loop() {
-        driveTrain.updatePosition();
-        Pose2D pos = driveTrain.getPosition();
-        PathServer.setRobotPose(pos);
-
-        double curTime = runtime.seconds();
-        double dt = curTime - lastTime;
-        lastTime = curTime;
-
-        if (pauseTimeLeft <= 0) {
-            driveTrain.drive();
-            int nextPointIndex = driveTrain.getNextPointIndex();
-
-            while (lastTagIndex < tags.length && tags[lastTagIndex].index <= nextPointIndex) {
-                PathServer.Tag currTag = tags[lastTagIndex];
-                switch (currTag.name) {
-                    case "velocity":
-                        driveTrain.setVelocity((int) (currTag.value * BasicHolonomicDrivetrain.FORWARD_COUNTS_PER_INCH));
-                        break;
-                    case "pause":
-                        if (currTag.value <= 0) break;
-                        pauseTimeLeft = currTag.value;
-                        pausedIndex = nextPointIndex;
-                        driveTrain.setPositionDrive(positions[nextPointIndex - 1]);
-                        break;
-                    // Add more cases here for your own custom tags!
-                }
-                lastTagIndex++;
-            }
-        } else {
-            pauseTimeLeft -= dt;
-
-            if (pauseTimeLeft <= 0) {
-                pauseTimeLeft = 0;
-                driveTrain.setPositionDrive(positions, pausedIndex);
-            } else {
-                driveTrain.setPositionDrive(positions[pausedIndex - 1]);
-            }
-        }
-    }
-
-    @Override
-    public void stop() {
-        PathServer.stopServer();
+    protected void finish() {
+        if (intake != null) intake.setVelocity(0);
     }
 }
