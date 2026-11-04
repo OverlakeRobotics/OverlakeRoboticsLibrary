@@ -14,8 +14,8 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 public class BasicHolonomicDrivetrain {
     public static final double MAX_STOP_VELOCITY = 1e-2;
     public static final int MAX_VELOCITY = 2800;
-    public static final double FORWARD_COUNTS_PER_INCH = 32.49;
-    public static final double STRAFE_COUNTS_PER_INCH = 33.27;
+    public static final double FORWARD_COUNTS_PER_INCH = 32.0493; //32.49
+    public static final double STRAFE_COUNTS_PER_INCH = 38.2725; //33.27
     public static final double STRAFE_TO_FORWARD_RATIO = STRAFE_COUNTS_PER_INCH / FORWARD_COUNTS_PER_INCH;
     private final DcMotorEx backLeft;
     private final DcMotorEx backRight;

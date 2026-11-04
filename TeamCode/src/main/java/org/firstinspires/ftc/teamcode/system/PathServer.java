@@ -75,12 +75,17 @@ public class PathServer extends NanoHTTPD {
         }
     }
 
-    private static volatile Double ROBOT_MAX_SPEED = null;
-    private static volatile Double ROBOT_MAX_STRAFE_SPEED = null;
-    private static volatile Double ROBOT_MAX_DECEL = null;
-    private static volatile Double ROBOT_MAX_ACCEL = null;
-
-    private static volatile PathRoute ROUTE = PathRoute.empty();
+    private static volatile Tag[] TAGS = new Tag[0];
+    private static volatile PathRoute route;
+    public static PathRoute getRoute() { return route; }
+    public static synchronized void clearRoute() {
+        route = null;
+        RAW_POINTS = new double[][]{{0, 0, 0}};
+        TAGS = new Tag[0];
+        ALLIANCE = "unknown";
+        VELOCITY_IN_S = 0;
+        TOLERANCE_IN = 0;
+    }
     private static volatile PathServer instance;
 
     // Starts the embedded HTTP server.
@@ -257,25 +262,26 @@ public class PathServer extends NanoHTTPD {
         return new JSONObject(body);
     }
 
-    // Publishes a parsed route to the static fields read by the accessors above.
-    private static void applyRoute(PathRoute route) {
-        double[][] pts = new double[route.points.length + 1][3];
-        pts[0] = route.start.clone();
-        for (int i = 0; i < route.points.length; i++) pts[i + 1] = route.points[i].clone();
-
-        ROUTE = route;
-        RAW_POINTS = pts;
-        ALLIANCE = route.alliance;
-    }
-
-    // Robot limits for the /config endpoint; null entries become JSON null.
-    private static JSONObject robotToJson() throws JSONException {
-        JSONObject r = new JSONObject();
-        r.put("maxSpeedInS", ROBOT_MAX_SPEED != null ? ROBOT_MAX_SPEED : JSONObject.NULL);
-        r.put("maxStrafeSpeedInS", ROBOT_MAX_STRAFE_SPEED != null ? ROBOT_MAX_STRAFE_SPEED : JSONObject.NULL);
-        r.put("maxDecelInS2", ROBOT_MAX_DECEL != null ? ROBOT_MAX_DECEL : JSONObject.NULL);
-        r.put("maxAccelInS2", ROBOT_MAX_ACCEL != null ? ROBOT_MAX_ACCEL : JSONObject.NULL);
-        return r;
+    // Applies the uploaded JSON payload to RAW_POINTS/config fields.
+    private static synchronized void applyPayload(JSONObject obj) throws JSONException {
+        PathRoute parsed = PathRoute.fromJson(obj);
+        double[][] points = new double[parsed.points.size() + 1][3];
+        for (int i = 0; i < points.length; i++) {
+            Pose2D pose = i == 0 ? parsed.start : parsed.points.get(i - 1);
+            points[i] = new double[]{pose.getX(DistanceUnit.INCH), pose.getY(DistanceUnit.INCH),
+                    pose.getHeading(AngleUnit.DEGREES)};
+        }
+        Tag[] tags = new Tag[parsed.markers.size()];
+        for (int i = 0; i < tags.length; i++) {
+            PathRoute.Marker m = parsed.markers.get(i);
+            tags[i] = new Tag(m.name, m.value, m.index);
+        }
+        RAW_POINTS = points;
+        TAGS = tags;
+        ALLIANCE = parsed.alliance;
+        VELOCITY_IN_S = parsed.velocity;
+        TOLERANCE_IN = parsed.tolerance;
+        route = parsed;
     }
 
     // Converts the tag list into a JSON array for the /config endpoint.
